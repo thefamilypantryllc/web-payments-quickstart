@@ -17,6 +17,31 @@ const { client: square } = require('./server/square');
 async function createPayment(req, res) {
   const payload = await json(req);
 
+  if (payload.lat && payload.lon) {
+    const validationResponse = await fetch(
+      'http://localhost:3000/validate-address',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lat: payload.lat,
+          lon: payload.lon,
+        }),
+      },
+    );
+
+    const check = await validationResponse.json();
+
+    if (!check.allowed) {
+      return send(res, 400, {
+        success: false,
+        error: `Address is outside delivery area (${check.miles.toFixed(1)} miles).`,
+      });
+    }
+  }
+
   console.log('CARD PAYMENT PAYLOAD:');
   console.dir(payload, { depth: null });
 
@@ -46,6 +71,20 @@ async function createPayment(req, res) {
       });
 
       const order = orderResponse.order;
+	  
+	  const subtotal = Number(order.totalMoney.amount) / 100;
+
+	const deliveryFee = subtotal < 40 ? 3.00 : 0;
+
+	const salesTax = subtotal * 0.08225;
+
+	const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
+
+	const grandTotal =
+	  subtotal +
+	  deliveryFee +
+	  salesTax +
+	  tipAmount;
 
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
@@ -55,13 +94,15 @@ async function createPayment(req, res) {
         locationId: payload.locationId,
         sourceId: payload.sourceId,
 
-        orderId: order.id,
-
-        amountMoney: {
-          amount: order.totalMoney.amount,
-          currency: 'USD',
-        },
+		amountMoney: {
+		  amount: BigInt(Math.round(grandTotal * 100)),
+		  currency: 'USD',
+		},
       };
+	  console.log(
+  'PAYMENT AMOUNT:',
+  BigInt(Math.round(grandTotal * 100))
+);
 
       if (payload.customerId) {
         payment.customerId = payload.customerId;
@@ -74,31 +115,34 @@ async function createPayment(req, res) {
         payment.verificationToken = payload.verificationToken;
       }
 
-      const { payment: paymentResponse } =
-        await square.payments.create(payment);
-      logger.info('Payment succeeded!', { paymentResponse });
+      const { payment: paymentResponse } = await square.payments.create(payment);
 
-      send(res, 200, {
-        success: true,
+	logger.info('Payment succeeded!', { paymentResponse });
 
-        payment: {
-          id: paymentResponse.id,
-          status: paymentResponse.status,
-          receiptUrl: paymentResponse.receiptUrl,
-          orderId: paymentResponse.orderId,
-        },
+	return send(res, 200, {
+	  success: true,
 
-        orderId: order.id,
-        status: 'PAID',
-        total: Number(order.totalMoney.amount) / 100,
+	  payment: {
+		id: paymentResponse.id,
+		status: paymentResponse.status,
+		receiptUrl: paymentResponse.receiptUrl,
+	  },
 
-        items: order.lineItems.map((item) => ({
-          name: item.name,
-          variationName: item.variationName,
-          quantity: item.quantity,
-        })),
-      });
-    } catch (ex) {
+	  status: 'PAID',
+
+	  subtotal,
+	  deliveryFee,
+	  salesTax,
+	  tipAmount,
+	  grandTotal,
+
+	  items: order.lineItems.map((item) => ({
+		name: item.name,
+		variationName: item.variationName,
+		quantity: item.quantity,
+	  })),
+	});
+	    } catch (ex) {
       if (ex.errors) {
         logger.error(ex.errors);
         bail(ex);
@@ -163,6 +207,31 @@ async function storeCard(req, res) {
 async function createCashOrder(req, res) {
   const payload = await json(req);
 
+  if (payload.lat && payload.lon) {
+    const validationResponse = await fetch(
+      'http://localhost:3000/validate-address',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lat: payload.lat,
+          lon: payload.lon,
+        }),
+      },
+    );
+
+    const check = await validationResponse.json();
+
+    if (!check.allowed) {
+      return send(res, 400, {
+        success: false,
+        error: `Address is outside delivery area (${check.miles.toFixed(1)} miles).`,
+      });
+    }
+  }
+
   try {
     logger.info('Creating cash order', payload);
 
@@ -188,34 +257,59 @@ async function createCashOrder(req, res) {
     console.log('RESPONSE.ORDER');
     console.dir(response.order, { depth: null });
 
-    console.log('RESPONSE.RESULT');
-    console.dir(response.result, { depth: null });
-    console.dir(response, { depth: null });
-
     const order = response.order;
 
-    console.log('ORDER:', order);
+	const subtotal = Number(order.totalMoney.amount) / 100;
 
-    return send(res, 200, {
-      success: true,
-      orderId: order.id,
-      status: order.state,
-      total: Number(order.totalMoney.amount) / 100,
-      items: (order.lineItems || []).map((item) => ({
-        name: item.name,
-        variationName: item.variationName,
-        quantity: item.quantity,
-      })),
-    });
-  } catch (err) {
-    console.error('CASH ERROR:', err);
+	const deliveryFee = subtotal < 40 ? 3.00 : 0;
 
-    return send(res, 500, {
-      success: false,
-      error: err.message,
-    });
-  }
-}
+	const salesTax =
+  Math.round(subtotal * 0.08225 * 100) / 100;
+
+	const tipAmount =
+	  Math.round(
+		subtotal * ((payload.tipPercent || 0) / 100) * 100
+	  ) / 100;
+
+	const grandTotal =
+	  subtotal +
+	  deliveryFee +
+	  salesTax +
+	  tipAmount;
+
+	console.log('SUBTOTAL:', subtotal);
+	console.log('DELIVERY:', deliveryFee);
+	console.log('TAX:', salesTax);
+	console.log('TIP:', tipAmount);
+	console.log('GRAND TOTAL:', grandTotal);
+
+	return send(res, 200, {
+	  success: true,
+
+	  status: 'OPEN',
+
+	  subtotal,
+	  deliveryFee,
+	  salesTax,
+	  tipAmount,
+	  grandTotal,
+
+	  items: order.lineItems.map((item) => ({
+		name: item.name,
+		variationName: item.variationName,
+		quantity: item.quantity,
+	  })),
+	});
+
+	  } catch (err) {
+		console.error('CASH ERROR:', err);
+
+		return send(res, 500, {
+		  success: false,
+		  error: err.message,
+		});
+	  }
+	}
 async function getCatalog(req, res) {
   try {
     const response = await square.catalog.list();
@@ -234,21 +328,85 @@ async function getCatalog(req, res) {
     });
   }
 }
-// serve static files like index.html and favicon.ico from public/ directory
+async function addressSearch(req, res) {
+  try {
+    const url = new URL(req.url, 'http://localhost');
+
+    const query = url.searchParams.get('q');
+
+    const response = await fetch(
+      `https://atlas.microsoft.com/search/address/json` +
+        `?api-version=1.0` +
+        `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
+        `&query=${encodeURIComponent(query)}` +
+        `&countrySet=US` +
+        `&lat=39.5663` +
+        `&lon=-94.4485` +
+        `&radius=25000`,
+    );
+
+    const data = await response.json();
+
+    return send(res, 200, data);
+  } catch (err) {
+    console.error('ADDRESS SEARCH ERROR:', err);
+
+    return send(res, 500, {
+      error: err.message,
+    });
+  }
+}
+async function validateDeliveryAddress(req, res) {
+  try {
+    const payload = await json(req);
+
+    const customerLat = payload.lat;
+    const customerLon = payload.lon;
+
+    const STORE_LAT = 39.5663;
+    const STORE_LON = -94.4485;
+
+    const response = await fetch(
+      `https://atlas.microsoft.com/route/directions/json` +
+        `?api-version=1.0` +
+        `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
+        `&query=${STORE_LAT},${STORE_LON}:${customerLat},${customerLon}`,
+    );
+
+    const data = await response.json();
+
+    const meters = data.routes?.[0]?.summary?.lengthInMeters || 0;
+
+    const miles = meters * 0.000621371;
+
+    return send(res, 200, {
+      allowed: miles <= 15,
+      miles,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return send(res, 500, {
+      allowed: false,
+      error: err.message,
+    });
+  }
+}
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
+
   await staticHandler(req, res, {
     public: 'public',
   });
 }
-
-// export routes to be served by micro
 module.exports = router(
   post('/payment', createPayment),
   post('/card', storeCard),
   post('/cash', createCashOrder),
 
   get('/catalog', getCatalog),
+  get('/address-search', addressSearch),
+  post('/validate-address', validateDeliveryAddress),
 
   get('/*', serveStatic),
 );

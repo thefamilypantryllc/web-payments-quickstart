@@ -4,6 +4,12 @@
     <title>Order Confirmation</title>
 
     <style>
+      .success-banner {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e5e5;
+      }
       body {
         background: #d3ffb7;
         font-family: Arial, sans-serif;
@@ -18,6 +24,8 @@
         padding: 30px;
         width: 600px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        justify-content: center;
+        align-items: center;
       }
 
       h1 {
@@ -38,31 +46,196 @@
         justify-content: space-between;
         margin: 10px 0;
       }
-
       .total {
         font-weight: bold;
         font-size: 20px;
         border-top: 2px solid #ddd;
         padding-top: 10px;
       }
-      .receipt-link {
-        display: inline-block;
-        background: #8cc3ff;
+      .confirmation-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        width: 700px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+
+        justify-content: center;
+        align-items: center;
+      }
+
+      .success-banner {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .success-icon {
+        font-size: 48px;
+        color: #4caf50;
+      }
+
+      .section {
+        margin-top: 25px;
+      }
+
+      .section h3 {
+        border-bottom: 2px solid #e5e5e5;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
         color: #1a304a;
-        text-decoration: none;
-        padding: 10px 16px;
-        border-radius: 6px;
+      }
+
+      .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+      }
+
+      .grand-total {
+        font-size: 28px;
+        font-weight: bold;
+        color: #1a304a;
+      }
+      .status-paid {
+        color: #2e7d32;
         font-weight: bold;
       }
-      .receipt-link:hover {
-        background: #7ab5f0;
+
+      .status-cash {
+        color: #ef6c00;
+        font-weight: bold;
+      }
+      .delivery-box {
+        background: linear-gradient(135deg, #e8f4ff, #d6ecff);
+        border-left: 6px solid #1a304a;
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin: 18px 0 22px 0;
+        justify-content: center;
+        align-items: center;
+
+        font-size: 16px;
+        line-height: 1.5;
+
+        box-shadow: 0 2px 8px rgba(26, 48, 74, 0.12);
+      }
+      .delivery-box strong {
+        color: #e65100;
+        font-size: 18px;
+      }
+      .action-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 25px;
+        flex-wrap: wrap;
+      }
+
+      .action-btn {
+        background: #1a304a;
+        color: white;
+        text-decoration: none;
+
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+
+        width: 170px;
+        height: 44px;
+
+        border-radius: 6px;
+        border: none;
+
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        color: white;
+      }
+      .action-btn {
+        background: #1a304a;
+        color: white;
+        text-decoration: none;
+
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+
+        width: 170px;
+        height: 44px;
+
+        border-radius: 6px;
+        border: none;
+
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+
+        transition: all 0.2s ease;
+      }
+
+      .action-btn:hover {
+        background: #29476b;
+        transform: translateY(-2px);
+      }
+
+      .confirmation-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        width: 100%;
+        max-width: 700px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        justify-content: center;
+        align-items: center;
+      }
+      .total-row {
+        padding: 6px 0;
+      }
+
+      .total {
+        margin-top: 10px;
+      }
+      #orderId {
+        word-break: break-all;
+      }
+      .action-btn:active {
+        transform: translateY(0);
+      }
+      .summary-divider {
+        border: none;
+        border-top: 1px solid #d9d9d9;
+        margin: 15px 0;
+      }
+      .total {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 2px solid #1a304a;
+
+        font-size: 34px;
+        font-weight: bold;
+        color: #1a304a;
+      }
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+      }
+      #order-items {
+        margin-bottom: 15px;
+      }
+      .item-row {
+        padding: 6px 0;
       }
     </style>
   </head>
 
   <body>
     <div class="confirmation-card">
-      <h1>Order Confirmation</h1>
+      <div class="success-banner">
+        <div class="success-icon">✅</div>
+        <h1>Order Confirmed</h1>
+        <p>Thank you for your order!</p>
+      </div>
 
       <div class="row">
         <span class="label">Order ID:</span>
@@ -85,13 +258,13 @@
       </div>
 
       <div class="row">
-		  <span class="label">Delivery Address:</span>
-		  <span id="address"></span>
-		</div>
+        <span class="label">Delivery Address:</span>
+        <span id="address"></span>
+      </div>
 
-      <div class="row">
-        <span class="label">Delivery Time:</span>
-        <span id="deliveryTime"></span>
+      <div class="delivery-box">
+        🚚 Expected Delivery:
+        <strong id="deliveryTime"></strong>
       </div>
 
       <div class="row">
@@ -108,14 +281,27 @@
 
       <h2>Order Summary</h2>
 
-      <div class="row">
-        <span class="label">Items:</span><br />
-        <span id="order-items"></span>
+      <div class="section">
+        <h3>Order Items</h3>
+
+        <div id="order-items"></div>
       </div>
+
+      <hr class="summary-divider" />
 
       <div class="total-row">
         <span>Subtotal</span>
         <span id="subtotal"></span>
+      </div>
+
+      <div class="total-row">
+        <span>Delivery Fee</span>
+        <span id="deliveryFee"></span>
+      </div>
+
+      <div class="total-row">
+        <span>Sales Tax</span>
+        <span id="salesTax"></span>
       </div>
 
       <div class="total-row">
@@ -130,19 +316,31 @@
 
       <div class="Delivery-info">
         <h3>Delivery Information</h3>
-        <p>Please be ready at your selected Delivery time.</p>
+        <p>
+          Your order will be delivered to the address listed above during your
+          selected delivery time.
+        </p>
         <p>Questions? Contact: info@thefamilypantry.org</p>
         <p>Or Call: (816)207-7623</p>
       </div>
-
-      <div id="receiptSection" style="display: none">
-        <a id="receiptLink" class="receipt-link" target="_blank">
+      <div class="action-buttons">
+        <a id="receiptLink" class="action-btn receipt-link" target="_blank">
           View Square Receipt
         </a>
+
+        <button
+          class="action-btn menu-button"
+          onclick="window.location.href = '/menu.html'"
+        >
+          Return to Menu
+        </button>
+
+        <button class="action-btn print-button" onclick="window.print()">
+          Print Order
+        </button>
       </div>
     </div>
   </body>
-
   <script>
     const params = new URLSearchParams(window.location.search);
 
@@ -157,46 +355,108 @@
 
     document.getElementById('address').textContent = params.get('address');
 
-    document.getElementById('deliveryTime').textContent =
-      params.get('deliveryTime');
-
     document.getElementById('method').textContent = params.get('method');
 
+    const menuButton = document.getElementById('menuButton');
+
+    if (menuButton) {
+      menuButton.style.display = 'block';
+    }
+
+    function getOrdinal(n) {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    const deliveryTime = params.get('deliveryTime');
+
+    if (deliveryTime) {
+      const date = new Date(deliveryTime);
+
+      const weekday = date.toLocaleDateString('en-US', {
+        weekday: 'long',
+      });
+
+      const month = date.toLocaleDateString('en-US', {
+        month: 'long',
+      });
+
+      const day = getOrdinal(date.getDate());
+
+      const year = date.getFullYear();
+
+      const time = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
+      document.getElementById('deliveryTime').textContent =
+        `${weekday}, ${month} ${day}, ${year} at ${time}`;
+    }
+	const subtotal =
+	  Number(params.get('subtotal') || 0);
+
+	const deliveryFee =
+	  Number(params.get('deliveryFee') || 0);
+
+	const salesTax =
+	  Number(params.get('salesTax') || 0);
+
+	const tip =
+	  Number(params.get('tip') || 0);
+
+	const grandTotal =
+	  Number(params.get('total') || 0);
+
     const items = params.get('items') || '';
+
+	document.getElementById('subtotal').textContent =
+	  '$' + subtotal.toFixed(2);
+
+	document.getElementById('deliveryFee').textContent =
+	  '$' + deliveryFee.toFixed(2);
+
+	document.getElementById('salesTax').textContent =
+	  '$' + salesTax.toFixed(2);
+
+	document.getElementById('tip').textContent =
+	  '$' + tip.toFixed(2);
+
+	document.getElementById('grandTotal').textContent =
+	  '$' + grandTotal.toFixed(2);
+
     document.getElementById('order-items').innerHTML = items
       .split(', ')
-      .join('<br>');
-
-    document.getElementById('status').textContent = params.get('status');
-    const total = params.get('total') || '0.00';
-    const tip = params.get('tip') || '0.00';
-
-    document.getElementById('subtotal').textContent =
-      '$' + (total - tip).toFixed(2);
-    document.getElementById('tip').textContent = '$' + Number(tip).toFixed(2);
-    document.getElementById('grandTotal').textContent =
-      '$' + Number(total).toFixed(2);
+      .map(
+        (item) => `
+           <div class="item-row">
+             <span>${item}</span>
+           </div>
+         `,
+      )
+      .join('');
 
     const method = params.get('method') || '';
 
+    const statusEl = document.getElementById('status');
+
     if (method.toLowerCase() === 'card') {
-      document.getElementById('status').textContent = 'PAID';
+      statusEl.textContent = 'PAID';
+      statusEl.className = 'status-paid';
     }
 
     if (method.toLowerCase() === 'cash') {
-      document.getElementById('status').textContent = 'OPEN - Pay at Pickup';
-    }
-    // Clear cart after successful order
-    if (params.get('orderId')) {
-      localStorage.removeItem('cartItems');
+      statusEl.textContent = 'PAY AT DELIVERY';
+      statusEl.className = 'status-cash';
     }
     const receiptUrl = params.get('receiptUrl');
+    const receiptLink = document.getElementById('receiptLink');
+
     if (receiptUrl) {
-      document.getElementById('receiptLink').href = receiptUrl;
-      document.getElementById('receiptSection').style.display = 'block';
+      receiptLink.href = receiptUrl;
+    } else {
+      receiptLink.style.display = 'none';
     }
-	console.log(window.location.search);
-console.log(params.get('pickupTime'));
-	
   </script>
 </html>

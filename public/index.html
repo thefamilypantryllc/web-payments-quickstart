@@ -1,4 +1,12 @@
 <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+
+<link
+  rel="stylesheet"
+  href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css"
+/>
+
+<script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
 <body>
   <div id="payment-form-wrapper">
     <div class="payment-methods">
@@ -22,7 +30,7 @@
           value="cod"
           onclick="toggleCardInput()"
         />
-        Cash at Pickup
+        Cash on Delivery
       </label>
     </div>
 
@@ -45,24 +53,29 @@
 
       <label class="checkout-label"> Address </label>
 
-      <input
-        id="customer-address"
-        class="checkout-input"
-        type="text"
-        placeholder="123 Main St, Smithville, MO"
-      />
+      <div class="address-wrapper">
+        <input
+          type="text"
+          id="customer-address"
+          class="checkout-input"
+          placeholder="Enter delivery address"
+        />
+        <div id="address-suggestions"></div>
+      </div>
 
-      <label class="checkout-label"> Pickup Time </label>
-      <input id="pickup-time" class="checkout-input" type="datetime-local" />
+      <label class="checkout-label"> Delivery Time </label>
+      <input id="delivery-time" class="checkout-input" type="datetime-local" />
     </div>
     <div class="tip-section">
       <div class="tip-section">
         <h3>Add a Tip</h3>
 
-        <button type="button" onclick="setTip(10)">10%</button>
-        <button type="button" onclick="setTip(15)">15%</button>
-        <button type="button" onclick="setTip(20)">20%</button>
-        <button type="button" onclick="setTip(0)">No Tip</button>
+        <div class="tip-buttons">
+          <button class="tip-btn" onclick="setTip(10, this)">10%</button>
+          <button class="tip-btn" onclick="setTip(15, this)">15%</button>
+          <button class="tip-btn" onclick="setTip(20, this)">20%</button>
+          <button class="tip-btn" onclick="setTip(0, this)">No Tip</button>
+        </div>
 
         <p id="tip-display">Tip: 0%</p>
       </div>
@@ -209,18 +222,75 @@
         margin-bottom: 15px;
         font-size: 14px;
       }
+      .address-wrapper {
+        position: relative;
+      }
+      #address-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+
+        background: white;
+        border: 1px solid #d6dce5;
+        border-radius: 0 0 8px 8px;
+
+        max-height: 250px;
+        overflow-y: auto;
+
+        z-index: 9999;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      }
+
+      .address-option {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+      }
+
+      .address-option:hover {
+        background: #f5f9ff;
+      }
+
+      .tip-btn {
+        background: white;
+        border: 2px solid #8cc3ff;
+        color: #1a304a;
+        font-weight: bold;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .tip-btn:hover {
+        background: #8cc3ff;
+      }
+
+      .tip-btn.active {
+        background: #8cc3ff;
+      }
     </style>
 
     <!-- Square SDK Control Script Execution Block -->
     <script type="module">
       let selectedTip = 0;
 
-      window.setTip = function (percent) {
+      const addressInput = document.getElementById('customer-address');
+
+      const suggestions = document.getElementById('address-suggestions');
+
+      window.setTip = function (percent, button) {
         selectedTip = percent;
 
         document.getElementById('tip-display').textContent = `Tip: ${percent}%`;
 
-        console.log('Selected Tip:', selectedTip);
+        document.querySelectorAll('.tip-btn').forEach((btn) => {
+          btn.classList.remove('active');
+        });
+
+        button.classList.add('active');
       };
 
       const locationId = 'LQDHY43WBKWXT';
@@ -248,13 +318,39 @@
           const phone = document.getElementById('customer-phone').value;
 
           const email = document.getElementById('customer-email').value;
-		  
-		  const address = document.getElementById('customer-address').value;
 
-          const pickupTime = document.getElementById('pickup-time').value;
+          const addressInput = document.getElementById('customer-address');
 
-          console.log('Starting tokenize...');
+          const address = document.getElementById('customer-address').value;
 
+          const deliveryTime = document.getElementById('delivery-time').value;
+
+          const lat = addressInput.dataset.lat;
+          const lon = addressInput.dataset.lon;
+
+          if (!lat || !lon) {
+            alert('Address outside delivery area.');
+            return;
+          }
+          const validation = await fetch('/validate-address', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              lat,
+              lon,
+            }),
+          });
+
+          const deliveryCheck = await validation.json();
+
+          if (!deliveryCheck.allowed) {
+            alert(
+              `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. Delivery is limited to 15 miles.`,
+            );
+            return;
+          }
           const tokenResult = await card.tokenize();
 
           if (tokenResult.status !== 'OK') {
@@ -274,28 +370,36 @@
                 `${item.name} (${item.variationName}) x${item.quantity}`,
             )
             .join(', ');
+			
+localStorage.removeItem('cartItems');
 
-          const tipAmount = paymentResults.total * (selectedTip / 100);
-
-          const grandTotal = paymentResults.total + tipAmount;
+console.log(
+  'AFTER CLEAR:',
+  localStorage.getItem('cartItems')
+);
+		const subtotal = paymentResults.subtotal;
+		const deliveryFee = paymentResults.deliveryFee;
+		const salesTax = paymentResults.salesTax;
+		const tipAmount = paymentResults.tipAmount;
+		const grandTotal = paymentResults.grandTotal;
 
           window.location.href =
-            `/confirmation?orderId=${paymentResults.orderId}` +
-            `&paymentId=${paymentResults.payment.id}` +
-            `&receiptUrl=${encodeURIComponent(
-              paymentResults.payment.receiptUrl,
-            )}` +
+		  `/confirmation?` +
+		  `orderId=${encodeURIComponent(paymentResults.payment.orderId)}` +
+		  `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
             `&firstName=${encodeURIComponent(firstName)}` +
             `&lastName=${encodeURIComponent(lastName)}` +
             `&phone=${encodeURIComponent(phone)}` +
             `&email=${encodeURIComponent(email)}` +
-			`&address=${encodeURIComponent(address)}` +
-            `&pickupTime=${encodeURIComponent(pickupTime)}` +
+            `&address=${encodeURIComponent(address)}` +
+            `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
             `&method=Card` +
             `&items=${encodeURIComponent(itemList)}` +
-            `&tip=${encodeURIComponent(tipAmount.toFixed(2))}` +
-            `&total=${encodeURIComponent(grandTotal.toFixed(2))}` +
-            `&status=PAID`;
+			`&subtotal=${subtotal.toFixed(2)}` +
+			`&deliveryFee=${deliveryFee.toFixed(2)}` +
+			`&salesTax=${salesTax.toFixed(2)}` +
+			`&tip=${tipAmount.toFixed(2)}` +
+			`&total=${grandTotal.toFixed(2)}`;
         } catch (err) {
           console.error('FULL ERROR:', err);
 
@@ -304,26 +408,13 @@
       });
       async function CreatePayment(token) {
         const firstName = document.getElementById('customer-first-name').value;
-
         const lastName = document.getElementById('customer-last-name').value;
-
         const phone = document.getElementById('customer-phone').value;
-
         const email = document.getElementById('customer-email').value;
-
         const address = document.getElementById('customer-address').value;
-
-		if (!address.trim()) {
-		  alert('Please enter your delivery address.');
-		  return;
-		}
-
-        const pickupTime = document.getElementById('pickup-time').value;
+        const deliveryTime = document.getElementById('delivery-time').value;
 
         const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
-
-        console.log('CARD CART:', cartItems);
-        console.log('FIRST NAME:', firstName);
 
         const body = JSON.stringify({
           locationId,
@@ -334,11 +425,11 @@
           phone,
           email,
           address,
-          pickupTime,
+          deliveryTime,
           items: cartItems,
           tipPercent: selectedTip,
         });
-        console.log('SELECTED TIP:', selectedTip);
+
         const paymentResponse = await fetch('/payment', {
           method: 'POST',
           headers: {
@@ -351,8 +442,7 @@
           return paymentResponse.json();
         }
 
-        const errorBody = await paymentResponse.text();
-        throw new Error(errorBody);
+        throw new Error(await paymentResponse.text());
       }
 
       const cashButton = document.getElementById('cash-button');
@@ -375,16 +465,40 @@
 
           const address = document.getElementById('customer-address').value;
 
-          if (!address.trim()) {
-            statusContainer.innerHTML = 'Please enter your address.';
-            return;
-          }
-
-          const pickupTime = document.getElementById('pickup-time').value;
+          const deliveryTime = document.getElementById('delivery-time').value;
 
           const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
 
           console.log('SELECTED TIP:', selectedTip);
+
+          const lat = addressInput.dataset.lat;
+          const lon = addressInput.dataset.lon;
+
+          console.log('LAT:', lat);
+          console.log('LON:', lon);
+
+          if (!lat || !lon) {
+            statusContainer.innerHTML = 'Address outside delivery area.';
+            return;
+          }
+          const validation = await fetch('/validate-address', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              lat,
+              lon,
+            }),
+          });
+
+          const deliveryCheck = await validation.json();
+
+          if (!deliveryCheck.allowed) {
+            statusContainer.innerHTML = `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. We only deliver within 15 miles.`;
+
+            return;
+          }
 
           const response = await fetch('/cash', {
             method: 'POST',
@@ -400,7 +514,7 @@
               phone,
               email,
               address,
-              pickupTime,
+              deliveryTime,
               items: cartItems,
               tipPercent: selectedTip,
             }),
@@ -415,9 +529,11 @@
             )
             .join(', ');
 
-          const tipAmount = result.total * (selectedTip / 100);
-
-          const grandTotal = result.total + tipAmount;
+		const subtotal = result.subtotal;
+		const deliveryFee = result.deliveryFee;
+		const salesTax = result.salesTax;
+		const tipAmount = result.tipAmount;
+		const grandTotal = result.grandTotal;
 
           if (!response.ok) {
             statusContainer.innerHTML =
@@ -426,6 +542,13 @@
           }
 
           console.log('CASH RESULT:', result);
+		  
+localStorage.removeItem('cartItems');
+
+console.log(
+  'AFTER CLEAR:',
+  localStorage.getItem('cartItems')
+);
 
           window.location.href =
             `/confirmation?orderId=${result.orderId}` +
@@ -433,16 +556,93 @@
             `&lastName=${encodeURIComponent(lastName)}` +
             `&phone=${encodeURIComponent(phone)}` +
             `&email=${encodeURIComponent(email)}` +
-			`&address=${encodeURIComponent(address)}` +
-            `&pickupTime=${encodeURIComponent(pickupTime)}` +
+            `&address=${encodeURIComponent(address)}` +
+            `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
             `&method=Cash` +
             `&items=${encodeURIComponent(itemList)}` +
-            `&tip=${encodeURIComponent(tipAmount.toFixed(2))}` +
-            `&total=${encodeURIComponent(grandTotal.toFixed(2))}` +
-            `&status=${encodeURIComponent(result.status)}`;
+			`&subtotal=${subtotal.toFixed(2)}` +
+			`&deliveryFee=${deliveryFee.toFixed(2)}` +
+			`&salesTax=${salesTax.toFixed(2)}` +
+			`&tip=${tipAmount.toFixed(2)}` +
+			`&total=${grandTotal.toFixed(2)}`;
+			
         } catch (err) {
-          console.error(err);
-          statusContainer.innerHTML = 'Cash order submission failed';
+          console.error('CASH ERROR:', err);
+
+          statusContainer.innerHTML =
+            'Cash order submission failed: ' + err.message;
+        }
+      });
+
+      addressInput.addEventListener('input', async () => {
+        const query = addressInput.value;
+
+        // Clear previous coordinates whenever user types
+        addressInput.dataset.lat = '';
+        addressInput.dataset.lon = '';
+
+        if (query.length < 2) {
+          suggestions.innerHTML = '';
+          suggestions.style.display = 'none';
+          return;
+        }
+
+        try {
+          console.log('Searching:', query);
+
+          const response = await fetch(
+            `/address-search?q=${encodeURIComponent(query)}`,
+          );
+
+          const data = await response.json();
+
+          console.log('AZURE RESPONSE:', data);
+
+          suggestions.innerHTML = '';
+
+          if (!data.results || !data.results.length) {
+            suggestions.style.display = 'none';
+            return;
+          }
+
+          data.results.forEach((result) => {
+            const option = document.createElement('div');
+
+            option.className = 'address-option';
+            option.textContent = result.address.freeformAddress;
+
+            option.addEventListener('click', () => {
+              addressInput.value = result.address.freeformAddress;
+
+              addressInput.dataset.lat = result.position.lat;
+              addressInput.dataset.lon = result.position.lon;
+
+              console.log('SELECTED ADDRESS:', result.address.freeformAddress);
+
+              console.log(
+                'COORDINATES:',
+                result.position.lat,
+                result.position.lon,
+              );
+
+              suggestions.innerHTML = '';
+              suggestions.style.display = 'none';
+            });
+
+            suggestions.appendChild(option);
+          });
+
+          suggestions.style.display = 'block';
+        } catch (err) {
+          console.error('AZURE ERROR:', err);
+        }
+      });
+      document.addEventListener('click', (e) => {
+        const suggestions = document.getElementById('address-suggestions');
+
+        if (!e.target.closest('.address-wrapper')) {
+          suggestions.innerHTML = '';
+          suggestions.style.display = 'none';
         }
       });
     </script>
