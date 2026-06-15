@@ -1,0 +1,4 @@
+root: C:\Windows\System32\web-payments-quickstart 
+path: C:\Program Files\nodejs 
+arch: 64 
+proxy: none

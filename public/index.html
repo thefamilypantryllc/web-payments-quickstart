@@ -1,90 +1,468 @@
-<!doctype html>
-<html lange="en">
-  <head>
-    <script
-      type="text/javascript"
-      src="https://sandbox.web.squarecdn.com/v1/square.js"
-    ></script>
-    <meta charset="utf-8" />
-    <title>Square Web Payments Quickstart</title>
-    <link href="app.css" rel="stylesheet" />
-  </head>
+<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+<body>
+  <div id="payment-form-wrapper">
+    <div class="payment-methods">
+      <label class="radio-option">
+        <input
+          type="radio"
+          id="credit_card"
+          name="payment_method"
+          value="credit_card"
+          checked
+          onclick="toggleCardInput()"
+        />
+        Credit/Debit Card
+      </label>
 
-  <body>
-    <div id="landing-page-layout">
-      <h2 id="its-working">It's working!</h2>
-      <h1>Welcome to the Web Payments SDK Quickstart</h1>
-      <p>
-        To get started, we recommend following our
-        <a target="_blank" href="/">Quickstart guide</a>.
-      </p>
-      <p>
-        If you need more detail on a method or object, we also have a
-        <a
-          target="_blank"
-          href="https://developer.squareup.com/reference/sdks/web/payments"
-          >technical reference</a
-        >.
-      </p>
-
-      <div id="example-container">
-        <h3>Examples</h3>
-        <p>
-          These example implementations can be used as a reference or as the
-          base for your own implementation. For these to work, you'll need to
-          set your
-          <a target="_blank" href="https://developer.squareup.com/apps"
-            >applicationId and locationId</a
-          >.
-        </p>
-        <ul id="example-list">
-          <li>
-            <a href="/examples/card-charge.html">Charge Card</a>
-          </li>
-          <li>
-            <a href="/examples/card-store.html">Store Card on File</a>
-          </li>
-          <li>
-            <a href="/examples/card-charge-and-store.html"
-              >Charge and Store Card on File</a
-            >
-          </li>
-          <li>
-            <a href="/examples/card-charge-card-on-file.html"
-              >Charge Card on File</a
-            >
-          </li>
-          <li>
-            <a href="/examples/apple-pay.html">Apple Pay</a>
-          </li>
-          <li>
-            <a href="/examples/google-pay.html">Google Pay</a>
-          </li>
-          <li>
-            <a href="/examples/payment-request.html">Payment Request</a>
-          </li>
-          <li>
-            <a href="/examples/ach.html">ACH Bank Transfer</a>
-          </li>
-          <li>
-            <a href="/examples/ach-recurring.html"
-              >ACH Recurring Bank Transfer</a
-            >
-          </li>
-          <li>
-            <a href="/examples/gift-card.html">Gift Card Payments</a>
-          </li>
-          <li>
-            <a href="/examples/afterpay.html">Afterpay/Clearpay</a>
-          </li>
-          <li>
-            <a href="/examples/card-styling-simple.html">Card Styling</a>
-          </li>
-          <li>
-            <a href="/examples/cash-app-pay.html">Cash App Pay</a>
-          </li>
-        </ul>
-      </div>
+      <label class="radio-option">
+        <input
+          type="radio"
+          id="cod"
+          name="payment_method"
+          value="cod"
+          onclick="toggleCardInput()"
+        />
+        Cash at Pickup
+      </label>
     </div>
-  </body>
-</html>
+
+    <!-- Active Form View Wrapper -->
+    <div id="payment-status-container"></div>
+    <div class="checkout-section">
+      <div class="checkout-title">Customer Information</div>
+
+      <label class="checkout-label"> First Name </label>
+      <input id="customer-first-name" class="checkout-input" type="text" />
+
+      <label class="checkout-label"> Last Name </label>
+      <input id="customer-last-name" class="checkout-input" type="text" />
+
+      <label class="checkout-label"> Phone Number </label>
+      <input id="customer-phone" class="checkout-input" type="tel" />
+
+      <label class="checkout-label"> Email Address </label>
+      <input id="customer-email" class="checkout-input" type="email" />
+
+      <label class="checkout-label"> Address </label>
+
+      <input
+        id="customer-address"
+        class="checkout-input"
+        type="text"
+        placeholder="123 Main St, Smithville, MO"
+      />
+
+      <label class="checkout-label"> Pickup Time </label>
+      <input id="pickup-time" class="checkout-input" type="datetime-local" />
+    </div>
+    <div class="tip-section">
+      <div class="tip-section">
+        <h3>Add a Tip</h3>
+
+        <button type="button" onclick="setTip(10)">10%</button>
+        <button type="button" onclick="setTip(15)">15%</button>
+        <button type="button" onclick="setTip(20)">20%</button>
+        <button type="button" onclick="setTip(0)">No Tip</button>
+
+        <p id="tip-display">Tip: 0%</p>
+      </div>
+      <div id="payment-form">
+        <div id="card-container"></div>
+        <button id="card-button" type="button">Pay</button>
+      </div>
+
+      <div id="cash-form" style="display: none">
+        <div id="cash-status-container"></div>
+        <button id="cash-button" type="button">Pay</button>
+      </div>
+
+      <!-- Alternative Action View State -->
+    </div>
+    <title>Payment Form</title>
+    <style>
+      /* 1. Base Framework Layout (Updated to your custom light green) */
+      body {
+        background-color: #d3ffb7; /* Updated to your hex code */
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      #payment-form-wrapper {
+        max-width: 700px;
+        width: 100%;
+        padding: 20px;
+        transform: scale(0.9);
+        transform-origin: top center;
+      }
+
+      /* 2. Vertically Stacked and Centered Radio Selectors */
+      .payment-methods {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        margin-bottom: 24px;
+      }
+
+      .radio-option {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        color: #1a304a;
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      .radio-option input[type='radio'] {
+        margin: 0;
+        width: 18px;
+        height: 18px;
+      }
+
+      /* 3. White Card Container Layout Box */
+      #card-container {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        min-height: 90px;
+      }
+      /* 4. Action Buttons Style Configuration */
+      #card-button,
+      #cash-button {
+        background-color: #8cc3ff;
+        color: #1a304a;
+        font-weight: bold;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        padding: 16px;
+        width: 100%;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      #card-button:hover,
+      #cash-button:hover {
+        background-color: #7ab5f0;
+      }
+      .checkout-section {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .checkout-title {
+        color: #1a304a;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 16px;
+      }
+
+      .checkout-label {
+        display: block;
+        color: #1a304a;
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+
+      .checkout-input,
+      .checkout-select {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 16px;
+        border: 1px solid #d6dce5;
+        border-radius: 8px;
+        box-sizing: border-box;
+        font-size: 15px;
+        color: #1a304a;
+        background: #ffffff;
+      }
+
+      .checkout-input:focus,
+      .checkout-select:focus {
+        outline: none;
+        border-color: #8cc3ff;
+        box-shadow: 0 0 0 3px rgba(140, 195, 255, 0.3);
+      }
+
+      /* 5. System Status Notifications */
+      #payment-status-container {
+        color: #1a304a; /* Dark text for visibility on light green */
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+      #cash-status-container {
+        color: #1a304a; /* Dark text for visibility on light green */
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+    </style>
+
+    <!-- Square SDK Control Script Execution Block -->
+    <script type="module">
+      let selectedTip = 0;
+
+      window.setTip = function (percent) {
+        selectedTip = percent;
+
+        document.getElementById('tip-display').textContent = `Tip: ${percent}%`;
+
+        console.log('Selected Tip:', selectedTip);
+      };
+
+      const locationId = 'LQDHY43WBKWXT';
+      const payments = Square.payments(
+        'sandbox-sq0idb-K4jPLo1VWDr-iUoZBXTt2g',
+        'LQDHY43WBKWXT',
+      );
+      const card = await payments.card();
+      await card.attach('#card-container');
+
+      const cardButton = document.getElementById('card-button');
+
+      cardButton.addEventListener('click', async () => {
+        const statusContainer = document.getElementById(
+          'payment-status-container',
+        );
+
+        try {
+          const firstName = document.getElementById(
+            'customer-first-name',
+          ).value;
+
+          const lastName = document.getElementById('customer-last-name').value;
+
+          const phone = document.getElementById('customer-phone').value;
+
+          const email = document.getElementById('customer-email').value;
+		  
+		  const address = document.getElementById('customer-address').value;
+
+          const pickupTime = document.getElementById('pickup-time').value;
+
+          console.log('Starting tokenize...');
+
+          const tokenResult = await card.tokenize();
+
+          if (tokenResult.status !== 'OK') {
+            console.log(JSON.stringify(tokenResult.errors, null, 2));
+            throw new Error('Tokenization failed');
+          }
+
+          console.log('Creating payment...');
+
+          const paymentResults = await CreatePayment(tokenResult.token);
+
+          console.log('PAYMENT RESULT:', paymentResults);
+
+          const itemList = paymentResults.items
+            .map(
+              (item) =>
+                `${item.name} (${item.variationName}) x${item.quantity}`,
+            )
+            .join(', ');
+
+          const tipAmount = paymentResults.total * (selectedTip / 100);
+
+          const grandTotal = paymentResults.total + tipAmount;
+
+          window.location.href =
+            `/confirmation?orderId=${paymentResults.orderId}` +
+            `&paymentId=${paymentResults.payment.id}` +
+            `&receiptUrl=${encodeURIComponent(
+              paymentResults.payment.receiptUrl,
+            )}` +
+            `&firstName=${encodeURIComponent(firstName)}` +
+            `&lastName=${encodeURIComponent(lastName)}` +
+            `&phone=${encodeURIComponent(phone)}` +
+            `&email=${encodeURIComponent(email)}` +
+			`&address=${encodeURIComponent(address)}` +
+            `&pickupTime=${encodeURIComponent(pickupTime)}` +
+            `&method=Card` +
+            `&items=${encodeURIComponent(itemList)}` +
+            `&tip=${encodeURIComponent(tipAmount.toFixed(2))}` +
+            `&total=${encodeURIComponent(grandTotal.toFixed(2))}` +
+            `&status=PAID`;
+        } catch (err) {
+          console.error('FULL ERROR:', err);
+
+          statusContainer.innerHTML = 'Payment Failed';
+        }
+      });
+      async function CreatePayment(token) {
+        const firstName = document.getElementById('customer-first-name').value;
+
+        const lastName = document.getElementById('customer-last-name').value;
+
+        const phone = document.getElementById('customer-phone').value;
+
+        const email = document.getElementById('customer-email').value;
+
+        const address = document.getElementById('customer-address').value;
+
+		if (!address.trim()) {
+		  alert('Please enter your delivery address.');
+		  return;
+		}
+
+        const pickupTime = document.getElementById('pickup-time').value;
+
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        console.log('CARD CART:', cartItems);
+        console.log('FIRST NAME:', firstName);
+
+        const body = JSON.stringify({
+          locationId,
+          sourceId: token,
+          idempotencyKey: crypto.randomUUID(),
+          firstName,
+          lastName,
+          phone,
+          email,
+          address,
+          pickupTime,
+          items: cartItems,
+          tipPercent: selectedTip,
+        });
+        console.log('SELECTED TIP:', selectedTip);
+        const paymentResponse = await fetch('/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body,
+        });
+
+        if (paymentResponse.ok) {
+          return paymentResponse.json();
+        }
+
+        const errorBody = await paymentResponse.text();
+        throw new Error(errorBody);
+      }
+
+      const cashButton = document.getElementById('cash-button');
+
+      cashButton.addEventListener('click', async () => {
+        const statusContainer = document.getElementById(
+          'cash-status-container',
+        );
+
+        try {
+          const firstName = document.getElementById(
+            'customer-first-name',
+          ).value;
+
+          const lastName = document.getElementById('customer-last-name').value;
+
+          const phone = document.getElementById('customer-phone').value;
+
+          const email = document.getElementById('customer-email').value;
+
+          const address = document.getElementById('customer-address').value;
+
+          if (!address.trim()) {
+            statusContainer.innerHTML = 'Please enter your address.';
+            return;
+          }
+
+          const pickupTime = document.getElementById('pickup-time').value;
+
+          const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+          console.log('SELECTED TIP:', selectedTip);
+
+          const response = await fetch('/cash', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentMethod: 'Cash',
+              locationId,
+              idempotencyKey: crypto.randomUUID(),
+              firstName,
+              lastName,
+              phone,
+              email,
+              address,
+              pickupTime,
+              items: cartItems,
+              tipPercent: selectedTip,
+            }),
+          });
+
+          const result = await response.json();
+
+          const itemList = result.items
+            .map(
+              (item) =>
+                `${item.name} (${item.variationName}) x${item.quantity}`,
+            )
+            .join(', ');
+
+          const tipAmount = result.total * (selectedTip / 100);
+
+          const grandTotal = result.total + tipAmount;
+
+          if (!response.ok) {
+            statusContainer.innerHTML =
+              result.error || 'Cash order submission failed';
+            return;
+          }
+
+          console.log('CASH RESULT:', result);
+
+          window.location.href =
+            `/confirmation?orderId=${result.orderId}` +
+            `&firstName=${encodeURIComponent(firstName)}` +
+            `&lastName=${encodeURIComponent(lastName)}` +
+            `&phone=${encodeURIComponent(phone)}` +
+            `&email=${encodeURIComponent(email)}` +
+			`&address=${encodeURIComponent(address)}` +
+            `&pickupTime=${encodeURIComponent(pickupTime)}` +
+            `&method=Cash` +
+            `&items=${encodeURIComponent(itemList)}` +
+            `&tip=${encodeURIComponent(tipAmount.toFixed(2))}` +
+            `&total=${encodeURIComponent(grandTotal.toFixed(2))}` +
+            `&status=${encodeURIComponent(result.status)}`;
+        } catch (err) {
+          console.error(err);
+          statusContainer.innerHTML = 'Cash order submission failed';
+        }
+      });
+    </script>
+    <!-- Section Toggle Scripts -->
+    <script>
+      function toggleCardInput() {
+        const cashSelected = document.getElementById('cod').checked;
+
+        document.getElementById('payment-form').style.display = cashSelected
+          ? 'none'
+          : 'block';
+
+        document.getElementById('cash-form').style.display = cashSelected
+          ? 'block'
+          : 'none';
+
+        // Optional: clear old messages when switching
+        document.getElementById('payment-status-container').innerHTML = '';
+        document.getElementById('cash-status-container').innerHTML = '';
+      }
+    </script>
+  </div>
+</body>

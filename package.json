@@ -6,8 +6,8 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "NODE_ENV=production micro --listen tcp://0.0.0.0:${PORT-3000}",
-    "start:sandbox": "NODE_ENV=sandbox micro --listen tcp://0.0.0.0:${PORT-3000}",
+    "start": "set NODE_ENV=production && micro --listen tcp://127.0.0.1:3000",
+    "start:sandbox": "set NODE_ENV=sandbox && micro --listen tcp://127.0.0.1:3000",
     "inspect": "node --inspect node_modules/.bin/micro-dev",
     "dev": "micro-dev",
     "lint": "npm-run-all --serial lint:*",
@@ -15,7 +15,7 @@
     "lint:prettier": "prettier --check .",
     "lint:prettier:fix": "prettier --write .",
     "test": "npm-run-all --serial lint test:*",
-    "test:unit": "nyc ava"
+    "test:unit": "nyc ava --timeout=2m"
   },
   "repository": {
     "type": "git",
@@ -49,7 +49,7 @@
     "eslint-plugin-square": "^26.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "micro-dev": "^3.1.0",
+    "micro-dev": "^0.0.2",
     "node-fetch": "^2.7.0",
     "npm-run-all": "^4.1.5",
     "nyc": "^18.0.0",

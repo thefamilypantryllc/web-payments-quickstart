@@ -1,0 +1,15 @@
+Clear cart after successful order. x
+Improve confirmation page styling. x
+Add itemized totals.x
+Test card payments again. x
+Then connect Power Automate.
+
+In order:
+
+Fix confirmation.html element IDs. x
+Fix the invalid CSS. x
+Remove duplicate cart clearing. x
+Pass full order details in the card redirect. x
+Add receipt link display for card payments. x
+Make tipPercent actually modify the charged amount. x
+Add itemized order summary (quantity × price) on confirmation page. x

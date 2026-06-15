@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Order Confirmation</title>
+
+    <style>
+      body {
+        background: #d3ffb7;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        padding: 40px;
+      }
+
+      .confirmation-card {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        width: 600px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: #1a304a;
+      }
+
+      .row {
+        margin-bottom: 15px;
+      }
+      .label {
+        font-weight: bold;
+        color: #1a304a;
+      }
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+      }
+
+      .total {
+        font-weight: bold;
+        font-size: 20px;
+        border-top: 2px solid #ddd;
+        padding-top: 10px;
+      }
+      .receipt-link {
+        display: inline-block;
+        background: #8cc3ff;
+        color: #1a304a;
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-weight: bold;
+      }
+      .receipt-link:hover {
+        background: #7ab5f0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="confirmation-card">
+      <h1>Order Confirmation</h1>
+
+      <div class="row">
+        <span class="label">Order ID:</span>
+        <span id="orderId"></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Customer:</span>
+        <span id="customer"></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Phone:</span>
+        <span id="phone"></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Email:</span>
+        <span id="email"></span>
+      </div>
+
+      <div class="row">
+		  <span class="label">Delivery Address:</span>
+		  <span id="address"></span>
+		</div>
+
+      <div class="row">
+        <span class="label">Delivery Time:</span>
+        <span id="deliveryTime"></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Payment Method:</span>
+        <span id="method"></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Status:</span>
+        <span id="status"></span>
+      </div>
+
+      <hr />
+
+      <h2>Order Summary</h2>
+
+      <div class="row">
+        <span class="label">Items:</span><br />
+        <span id="order-items"></span>
+      </div>
+
+      <div class="total-row">
+        <span>Subtotal</span>
+        <span id="subtotal"></span>
+      </div>
+
+      <div class="total-row">
+        <span>Tip</span>
+        <span id="tip"></span>
+      </div>
+
+      <div class="total-row total">
+        <span>Total</span>
+        <span id="grandTotal"></span>
+      </div>
+
+      <div class="Delivery-info">
+        <h3>Delivery Information</h3>
+        <p>Please be ready at your selected Delivery time.</p>
+        <p>Questions? Contact: info@thefamilypantry.org</p>
+        <p>Or Call: (816)207-7623</p>
+      </div>
+
+      <div id="receiptSection" style="display: none">
+        <a id="receiptLink" class="receipt-link" target="_blank">
+          View Square Receipt
+        </a>
+      </div>
+    </div>
+  </body>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    document.getElementById('orderId').textContent = params.get('orderId');
+
+    document.getElementById('customer').textContent =
+      `${params.get('firstName')} ${params.get('lastName')}`;
+
+    document.getElementById('phone').textContent = params.get('phone');
+
+    document.getElementById('email').textContent = params.get('email');
+
+    document.getElementById('address').textContent = params.get('address');
+
+    document.getElementById('deliveryTime').textContent =
+      params.get('deliveryTime');
+
+    document.getElementById('method').textContent = params.get('method');
+
+    const items = params.get('items') || '';
+    document.getElementById('order-items').innerHTML = items
+      .split(', ')
+      .join('<br>');
+
+    document.getElementById('status').textContent = params.get('status');
+    const total = params.get('total') || '0.00';
+    const tip = params.get('tip') || '0.00';
+
+    document.getElementById('subtotal').textContent =
+      '$' + (total - tip).toFixed(2);
+    document.getElementById('tip').textContent = '$' + Number(tip).toFixed(2);
+    document.getElementById('grandTotal').textContent =
+      '$' + Number(total).toFixed(2);
+
+    const method = params.get('method') || '';
+
+    if (method.toLowerCase() === 'card') {
+      document.getElementById('status').textContent = 'PAID';
+    }
+
+    if (method.toLowerCase() === 'cash') {
+      document.getElementById('status').textContent = 'OPEN - Pay at Pickup';
+    }
+    // Clear cart after successful order
+    if (params.get('orderId')) {
+      localStorage.removeItem('cartItems');
+    }
+    const receiptUrl = params.get('receiptUrl');
+    if (receiptUrl) {
+      document.getElementById('receiptLink').href = receiptUrl;
+      document.getElementById('receiptSection').style.display = 'block';
+    }
+	console.log(window.location.search);
+console.log(params.get('pickupTime'));
+	
+  </script>
+</html>

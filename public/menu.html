@@ -1,0 +1,29 @@
+<select id="bagel-size">
+  <option value="AJF3NSAOZAXD5KCWIREGZ2VY">Autumn Soup</option>
+</select>
+
+<button onclick="addToCart()">Add To Cart</button>
+<script>
+  function addToCart() {
+    const variationId = document.getElementById('bagel-size').value;
+
+    let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+    const existingItem = cartItems.find(
+      (item) => item.catalogObjectId === variationId,
+    );
+
+    if (existingItem) {
+      existingItem.quantity = String(Number(existingItem.quantity) + 1);
+    } else {
+      cartItems.push({
+        catalogObjectId: variationId,
+        quantity: '1',
+      });
+    }
+
+    localStorage.setItem('cartItems', JSON.stringify(cartItems));
+
+    console.log(cartItems);
+  }
+</script>

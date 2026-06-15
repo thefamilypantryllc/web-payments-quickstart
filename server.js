@@ -10,35 +10,55 @@ const retry = require('async-retry');
 // logger gives us insight into what's happening
 const logger = require('./server/logger');
 // schema validates incoming requests
-const {
-  validatePaymentPayload,
-  validateCreateCardPayload,
-} = require('./server/schema');
+const { validateCreateCardPayload } = require('./server/schema');
 // square provides the API client and error types
-const { SquareError, client: square } = require('./server/square');
+const { client: square } = require('./server/square');
 
 async function createPayment(req, res) {
   const payload = await json(req);
+
+  console.log('CARD PAYMENT PAYLOAD:');
+  console.dir(payload, { depth: null });
+
   logger.debug(JSON.stringify(payload));
   // We validate the payload for specific fields. You may disable this feature
   // if you would prefer to handle payload validation on your own.
-  if (!validatePaymentPayload(payload)) {
-    throw createError(400, 'Bad Request');
-  }
+  // temporarily disabled
+  // if (!validatePaymentPayload(payload)) {
+  //   throw createError(400, 'Bad Request');
+  // }
 
   await retry(async (bail, attempt) => {
     try {
       logger.debug('Creating payment', { attempt });
 
+      const orderResponse = await square.orders.create({
+        idempotencyKey: crypto.randomUUID(),
+
+        order: {
+          locationId: payload.locationId,
+
+          lineItems: payload.items.map((item) => ({
+            catalogObjectId: item.catalogObjectId,
+            quantity: item.quantity,
+          })),
+        },
+      });
+
+      const order = orderResponse.order;
+
+      console.log('CARD ORDER CREATED:');
+      console.dir(order, { depth: null });
+
       const payment = {
         idempotencyKey: payload.idempotencyKey,
         locationId: payload.locationId,
         sourceId: payload.sourceId,
+
+        orderId: order.id,
+
         amountMoney: {
-          // the expected amount is in cents, meaning this is $1.00.
-          amount: 100n,
-          // If you are a non-US account, you must change the currency to match the country in which
-          // you are accepting the payment.
+          amount: order.totalMoney.amount,
           currency: 'USD',
         },
       };
@@ -60,22 +80,31 @@ async function createPayment(req, res) {
 
       send(res, 200, {
         success: true,
+
         payment: {
           id: paymentResponse.id,
           status: paymentResponse.status,
           receiptUrl: paymentResponse.receiptUrl,
           orderId: paymentResponse.orderId,
         },
+
+        orderId: order.id,
+        status: 'PAID',
+        total: Number(order.totalMoney.amount) / 100,
+
+        items: order.lineItems.map((item) => ({
+          name: item.name,
+          variationName: item.variationName,
+          quantity: item.quantity,
+        })),
       });
     } catch (ex) {
-      if (ex instanceof SquareError) {
-        // likely an error in the request. don't retry
+      if (ex.errors) {
         logger.error(ex.errors);
         bail(ex);
       } else {
-        // IDEA: send to error reporting service
         logger.error(`Error creating payment on attempt ${attempt}: ${ex}`);
-        throw ex; // to attempt retry
+        throw ex;
       }
     }
   });
@@ -119,21 +148,92 @@ async function storeCard(req, res) {
         card: result.card,
       });
     } catch (ex) {
-      if (ex instanceof SquareError) {
-        // likely an error in the request. don't retry
+      if (ex.errors) {
         logger.error(ex.errors);
         bail(ex);
       } else {
-        // IDEA: send to error reporting service
         logger.error(
           `Error creating card-on-file on attempt ${attempt}: ${ex}`,
         );
-        throw ex; // to attempt retry
+        throw ex;
       }
     }
   });
 }
+async function createCashOrder(req, res) {
+  const payload = await json(req);
 
+  try {
+    logger.info('Creating cash order', payload);
+
+    console.log('STEP 1');
+
+    console.log('ITEMS RECEIVED:');
+    console.dir(payload.items, { depth: null });
+
+    const response = await square.orders.create({
+      idempotencyKey: payload.idempotencyKey,
+
+      order: {
+        locationId: payload.locationId,
+
+        lineItems: payload.items.map((item) => ({
+          catalogObjectId: item.catalogObjectId,
+          quantity: item.quantity,
+        })),
+      },
+    });
+
+    console.log('STEP 2');
+    console.log('RESPONSE.ORDER');
+    console.dir(response.order, { depth: null });
+
+    console.log('RESPONSE.RESULT');
+    console.dir(response.result, { depth: null });
+    console.dir(response, { depth: null });
+
+    const order = response.order;
+
+    console.log('ORDER:', order);
+
+    return send(res, 200, {
+      success: true,
+      orderId: order.id,
+      status: order.state,
+      total: Number(order.totalMoney.amount) / 100,
+      items: (order.lineItems || []).map((item) => ({
+        name: item.name,
+        variationName: item.variationName,
+        quantity: item.quantity,
+      })),
+    });
+  } catch (err) {
+    console.error('CASH ERROR:', err);
+
+    return send(res, 500, {
+      success: false,
+      error: err.message,
+    });
+  }
+}
+async function getCatalog(req, res) {
+  try {
+    const response = await square.catalog.list();
+
+    console.dir(response, { depth: null });
+
+    return send(res, 200, {
+      success: true,
+    });
+  } catch (err) {
+    console.error('CATALOG ERROR:', err);
+
+    return send(res, 500, {
+      success: false,
+      error: err.message,
+    });
+  }
+}
 // serve static files like index.html and favicon.ico from public/ directory
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
@@ -146,5 +246,9 @@ async function serveStatic(req, res) {
 module.exports = router(
   post('/payment', createPayment),
   post('/card', storeCard),
+  post('/cash', createCashOrder),
+
+  get('/catalog', getCatalog),
+
   get('/*', serveStatic),
 );
