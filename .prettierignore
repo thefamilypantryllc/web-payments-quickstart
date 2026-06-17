@@ -1,0 +1,4 @@
+node_modules
+_del_node_modules
+coverage
+.nyc_output
