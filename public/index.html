@@ -333,7 +333,9 @@
       const card = await payments.card();
       await card.attach('#card-container');
 
-      updateCheckoutButtons();
+      window.addEventListener('pageshow', () => {
+  updateCheckoutButtons();
+});
 
       const cardButton = document.getElementById('card-button');
 
@@ -406,6 +408,7 @@
             .join(', ');
 
           localStorage.removeItem('cartItems');
+		  updateCheckoutButtons();
 
           console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
           const subtotal = paymentResults.subtotal;
@@ -597,6 +600,7 @@
           console.log('CASH RESULT:', result);
 
           localStorage.removeItem('cartItems');
+		  updateCheckoutButtons();
 
           console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
 
