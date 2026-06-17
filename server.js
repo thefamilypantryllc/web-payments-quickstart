@@ -271,7 +271,16 @@ async function createCashOrder(req, res) {
     console.dir(response.order, { depth: null });
 
     const order = response.result?.order || response.order;
+	
+		if (!order) {
+	  console.error('NO ORDER RETURNED');
+	  console.dir(response, { depth: null });
 
+	  return send(res, 500, {
+		success: false,
+		error: 'Square did not return an order',
+	  });
+}
     const subtotal = Number(order.totalMoney.amount) / 100;
 
     const deliveryFee = subtotal < 40 ? 3.0 : 0;
