@@ -41,11 +41,13 @@ function saveOrder(orderData) {
 
   const orderNumber = generateOrderNumber(result.lastInsertRowid);
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE orders
     SET order_number = ?
     WHERE id = ?
-  `).run(orderNumber, result.lastInsertRowid);
+  `,
+  ).run(orderNumber, result.lastInsertRowid);
 
   return orderNumber;
 }
