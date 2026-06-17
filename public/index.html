@@ -320,30 +320,29 @@
           document.getElementById('card-button').disabled = false;
           document.getElementById('cash-button').disabled = false;
         }
-		let summary = { items: [], subtotal: 0 };
+        let summary = { items: [], subtotal: 0 };
 
-		function updateOrderSummary() {
-		  const subtotal = Number(summary.subtotal || 0);
-		  const deliveryFee = subtotal < 40 ? 3 : 0;
-		  const salesTax = subtotal * 0.08225;
-		  const tipAmount = subtotal * (selectedTip / 100);
-		  const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+        function updateOrderSummary() {
+          const subtotal = Number(summary.subtotal || 0);
+          const deliveryFee = subtotal < 40 ? 3 : 0;
+          const salesTax = subtotal * 0.08225;
+          const tipAmount = subtotal * (selectedTip / 100);
+          const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
 
-		  document.getElementById('subtotal').textContent =
-			subtotal.toFixed(2);
+          document.getElementById('subtotal').textContent = subtotal.toFixed(2);
 
-		  document.getElementById('delivery-fee').textContent =
-			deliveryFee.toFixed(2);
+          document.getElementById('delivery-fee').textContent =
+            deliveryFee.toFixed(2);
 
-		  document.getElementById('sales-tax').textContent =
-			salesTax.toFixed(2);
+          document.getElementById('sales-tax').textContent =
+            salesTax.toFixed(2);
 
-		  document.getElementById('tip-amount').textContent =
-			tipAmount.toFixed(2);
+          document.getElementById('tip-amount').textContent =
+            tipAmount.toFixed(2);
 
-		  document.getElementById('grand-total').textContent =
-			grandTotal.toFixed(2);
-		}
+          document.getElementById('grand-total').textContent =
+            grandTotal.toFixed(2);
+        }
 
         const addressInput = document.getElementById('customer-address');
 
@@ -453,12 +452,12 @@
             updateOrderSummary();
 
             console.log('PAYMENT RESULTS:', paymentResults);
-			
-			const subtotal = Number(summary.subtotal || 0);
-			const deliveryFee = subtotal < 40 ? 3 : 0;
-			const salesTax = subtotal * 0.08225;
-			const tipAmount = subtotal * (selectedTip / 100);
-			const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+
+            const subtotal = Number(summary.subtotal || 0);
+            const deliveryFee = subtotal < 40 ? 3 : 0;
+            const salesTax = subtotal * 0.08225;
+            const tipAmount = subtotal * (selectedTip / 100);
+            const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
 
             window.location.href =
               `/confirmation?` +
@@ -617,10 +616,10 @@
 
             const result = await response.json();
             const subtotal = result.subtotal;
-			const deliveryFee = result.deliveryFee;
-			const salesTax = result.salesTax;
-			const tipAmount = result.tipAmount;
-			const grandTotal = result.grandTotal;
+            const deliveryFee = result.deliveryFee;
+            const salesTax = result.salesTax;
+            const tipAmount = result.tipAmount;
+            const grandTotal = result.grandTotal;
 
             const itemList = result.items
               .map(
@@ -756,14 +755,14 @@
           `/cart-summary?items=${encodeURIComponent(JSON.stringify(cartItems))}`,
         );
 
-		summary = await response.json();
+        summary = await response.json();
 
-		console.log('SUMMARY:', summary);
+        console.log('SUMMARY:', summary);
 
-		updateOrderSummary();
+        updateOrderSummary();
 
         document.querySelectorAll('.tip-btn').forEach((btn) => {
-          if (btn.textContent.includes("No Tip")) {
+          if (btn.textContent.includes('No Tip')) {
             btn.classList.add('active');
           }
         });
