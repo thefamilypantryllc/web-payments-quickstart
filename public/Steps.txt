@@ -28,7 +28,7 @@ allow typed address?
 My recommended order
 
 SQLite Order Storage x
-Custom Order Numbers
+Custom Order Numbers x
 Email Notifications
 Address Validation Cleanup
 Logo on Payment Page
