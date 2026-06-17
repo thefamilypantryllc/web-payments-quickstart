@@ -99,21 +99,23 @@ async function createPayment(req, res) {
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
 
-      const orderNumber = saveOrder({
-        squareOrderId: order.id,
-        customerName: `${payload.firstName} ${payload.lastName}`,
-        phone: payload.phone,
-        email: payload.email,
-        address: payload.address,
-        deliveryTime: payload.deliveryTime,
-        paymentMethod: 'Card',
-        status: 'Paid',
-        subtotal,
-        deliveryFee,
-        salesTax,
-        tip: tipAmount,
-        total: grandTotal,
-      });
+	const orderNumber = saveOrder({
+	  squareOrderId: order.id,
+	  customerName: `${payload.firstName} ${payload.lastName}`,
+	  phone: payload.phone,
+	  email: payload.email,
+	  address: payload.address,
+	  deliveryTime: payload.deliveryTime,
+	  paymentMethod: 'Card',
+	  status: 'Paid',
+	  subtotal,
+	  deliveryFee,
+	  salesTax,
+	  tip: tipAmount,
+	  total: grandTotal,
+	});
+
+console.log('ORDER NUMBER:', orderNumber);
 
       const payment = {
         idempotencyKey: payload.idempotencyKey,
@@ -319,21 +321,23 @@ async function createCashOrder(req, res) {
     console.log('FINAL CASH ORDER:');
     console.dir(order, { depth: null });
 
-    const orderNumber = saveOrder({
-      squareOrderId: order.id,
-      customerName: `${payload.firstName} ${payload.lastName}`,
-      phone: payload.phone,
-      email: payload.email,
-      address: payload.address,
-      deliveryTime: payload.deliveryTime,
-      paymentMethod: 'Cash',
-      status: 'Received',
-      subtotal,
-      deliveryFee,
-      salesTax,
-      tip: tipAmount,
-      total: grandTotal,
-    });
+	const orderNumber = saveOrder({
+	  squareOrderId: order.id,
+	  customerName: `${payload.firstName} ${payload.lastName}`,
+	  phone: payload.phone,
+	  email: payload.email,
+	  address: payload.address,
+	  deliveryTime: payload.deliveryTime,
+	  paymentMethod: 'Cash',
+	  status: 'Recieved',
+  	  subtotal,
+	  deliveryFee,
+	  salesTax,
+	  tip: tipAmount,
+	  total: grandTotal,
+	});
+
+console.log('ORDER NUMBER:', orderNumber);
 
     return send(res, 200, {
       success: true,
