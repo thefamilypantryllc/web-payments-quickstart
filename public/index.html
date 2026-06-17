@@ -621,12 +621,12 @@
             const tipAmount = result.tipAmount;
             const grandTotal = result.grandTotal;
 
-			const itemList = (result.items || [])
-			  .map(
-				(item) =>
-				  `${item.name} (${item.variationName}) x${item.quantity}`,
-			  )
-			  .join(', ');
+            const itemList = (result.items || [])
+              .map(
+                (item) =>
+                  `${item.name} (${item.variationName}) x${item.quantity}`,
+              )
+              .join(', ');
 
             if (!response.ok) {
               statusContainer.innerHTML =

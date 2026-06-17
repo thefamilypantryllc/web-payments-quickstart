@@ -288,29 +288,29 @@ async function createCashOrder(req, res) {
     console.log('TAX:', salesTax);
     console.log('TIP:', tipAmount);
     console.log('GRAND TOTAL:', grandTotal);
-	
-	console.log('FINAL CASH ORDER:');
-	console.dir(order, { depth: null });
 
-	return send(res, 200, {
-	  success: true,
+    console.log('FINAL CASH ORDER:');
+    console.dir(order, { depth: null });
 
-	  orderId: order.id,
+    return send(res, 200, {
+      success: true,
 
-	  status: 'OPEN',
+      orderId: order.id,
 
-	  subtotal,
-	  deliveryFee,
-	  salesTax,
-	  tipAmount,
-	  grandTotal,
+      status: 'OPEN',
 
-	  items: (order.lineItems || []).map((item) => ({
-		name: item.name,
-		variationName: item.variationName,
-		quantity: item.quantity,
-	  })),
-	});
+      subtotal,
+      deliveryFee,
+      salesTax,
+      tipAmount,
+      grandTotal,
+
+      items: (order.lineItems || []).map((item) => ({
+        name: item.name,
+        variationName: item.variationName,
+        quantity: item.quantity,
+      })),
+    });
   } catch (err) {
     console.error('CASH ERROR:', err);
 
