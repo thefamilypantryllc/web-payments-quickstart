@@ -2,8 +2,38 @@ Keep Square as payment processor
 Add SQLite order storage
 Generate your own order numbers
 
-Phase 2
+Step 2
 
 Email notifications
 Admin dashboard
 Order status tracking
+
+Other needs:
+Center - Delivery Information
+
+Logo on Confirmation Page
+
+Google/Apple Pay
+
+All addresses populating, error when it's outside the delivery area
+
+Logo on Payment Page
+
+Possilbly Background on Payment Page and Confirmation Page
+
+should order summary be before the tip options?
+
+allow typed address?
+
+My recommended order
+
+SQLite Order Storage x
+Custom Order Numbers
+Email Notifications
+Address Validation Cleanup
+Logo on Payment Page
+Logo on Confirmation Page
+Google Pay / Apple Pay
+Admin Dashboard
+Order Status Tracking
+Background / cosmetic improvements
