@@ -394,37 +394,29 @@
       document.getElementById('deliveryTime').textContent =
         `${weekday}, ${month} ${day}, ${year} at ${time}`;
     }
-	const subtotal =
-	  Number(params.get('subtotal') || 0);
+    const subtotal = Number(params.get('subtotal') || 0);
 
-	const deliveryFee =
-	  Number(params.get('deliveryFee') || 0);
+    const deliveryFee = Number(params.get('deliveryFee') || 0);
 
-	const salesTax =
-	  Number(params.get('salesTax') || 0);
+    const salesTax = Number(params.get('salesTax') || 0);
 
-	const tip =
-	  Number(params.get('tip') || 0);
+    const tip = Number(params.get('tip') || 0);
 
-	const grandTotal =
-	  Number(params.get('total') || 0);
+    const grandTotal = Number(params.get('total') || 0);
 
     const items = params.get('items') || '';
 
-	document.getElementById('subtotal').textContent =
-	  '$' + subtotal.toFixed(2);
+    document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
 
-	document.getElementById('deliveryFee').textContent =
-	  '$' + deliveryFee.toFixed(2);
+    document.getElementById('deliveryFee').textContent =
+      '$' + deliveryFee.toFixed(2);
 
-	document.getElementById('salesTax').textContent =
-	  '$' + salesTax.toFixed(2);
+    document.getElementById('salesTax').textContent = '$' + salesTax.toFixed(2);
 
-	document.getElementById('tip').textContent =
-	  '$' + tip.toFixed(2);
+    document.getElementById('tip').textContent = '$' + tip.toFixed(2);
 
-	document.getElementById('grandTotal').textContent =
-	  '$' + grandTotal.toFixed(2);
+    document.getElementById('grandTotal').textContent =
+      '$' + grandTotal.toFixed(2);
 
     document.getElementById('order-items').innerHTML = items
       .split(', ')

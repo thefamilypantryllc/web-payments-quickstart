@@ -6,118 +6,115 @@
 />
 
 <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
-
+<title>Payment Form</title>
 <body>
-  <div id="payment-form-wrapper">
-    <div class="payment-methods">
-      <label class="radio-option">
+  <!-- Active Form View Wrapper -->
+  <div class="form-wrapper">
+    <div class="left-column">
+      <div class="checkout-section">
+        <div class="checkout-title">Customer Information</div>
+        <label class="checkout-label"> First Name </label>
+        <input id="customer-first-name" class="checkout-input" type="text" />
+
+        <label class="checkout-label"> Last Name </label>
+        <input id="customer-last-name" class="checkout-input" type="text" />
+
+        <label class="checkout-label"> Phone Number </label>
+        <input id="customer-phone" class="checkout-input" type="tel" />
+
+        <label class="checkout-label"> Email Address </label>
+        <input id="customer-email" class="checkout-input" type="email" />
+
+        <label class="checkout-label"> Address </label>
+
+        <div class="address-wrapper">
+          <input
+            type="text"
+            id="customer-address"
+            class="checkout-input"
+            placeholder="Enter delivery address"
+          />
+          <div id="address-suggestions"></div>
+        </div>
+        <label class="checkout-label"> Delivery Time </label>
         <input
-          type="radio"
-          id="credit_card"
-          name="payment_method"
-          value="credit_card"
-          checked
-          onclick="toggleCardInput()"
-        />
-        Credit/Debit Card
-      </label>
-
-      <label class="radio-option">
-        <input
-          type="radio"
-          id="cod"
-          name="payment_method"
-          value="cod"
-          onclick="toggleCardInput()"
-        />
-        Cash on Delivery
-      </label>
-    </div>
-
-    <!-- Active Form View Wrapper -->
-    <div id="payment-status-container"></div>
-    <div class="checkout-section">
-      <div class="checkout-title">Customer Information</div>
-
-      <label class="checkout-label"> First Name </label>
-      <input id="customer-first-name" class="checkout-input" type="text" />
-
-      <label class="checkout-label"> Last Name </label>
-      <input id="customer-last-name" class="checkout-input" type="text" />
-
-      <label class="checkout-label"> Phone Number </label>
-      <input id="customer-phone" class="checkout-input" type="tel" />
-
-      <label class="checkout-label"> Email Address </label>
-      <input id="customer-email" class="checkout-input" type="email" />
-
-      <label class="checkout-label"> Address </label>
-
-      <div class="address-wrapper">
-        <input
-          type="text"
-          id="customer-address"
+          id="delivery-time"
           class="checkout-input"
-          placeholder="Enter delivery address"
+          type="datetime-local"
         />
-        <div id="address-suggestions"></div>
       </div>
-
-      <label class="checkout-label"> Delivery Time </label>
-      <input id="delivery-time" class="checkout-input" type="datetime-local" />
     </div>
-    <div class="tip-section">
-      <div class="tip-section">
-        <h3>Add a Tip</h3>
+    <div class="right-column">
+      <div id="payment-form-wrapper">
+        <div class="payment-methods">
+          <label class="radio-option">
+            <input
+              type="radio"
+              id="credit_card"
+              name="payment_method"
+              value="credit_card"
+              checked
+              onclick="toggleCardInput()"
+            />
+            Credit/Debit Card
+          </label>
 
-        <div class="tip-buttons">
-          <button class="tip-btn" onclick="setTip(10, this)">10%</button>
-          <button class="tip-btn" onclick="setTip(15, this)">15%</button>
-          <button class="tip-btn" onclick="setTip(20, this)">20%</button>
-          <button class="tip-btn" onclick="setTip(0, this)">No Tip</button>
+          <label class="radio-option">
+            <input
+              type="radio"
+              id="cod"
+              name="payment_method"
+              value="cod"
+              onclick="toggleCardInput()"
+            />
+            Cash on Delivery
+          </label>
+        </div>
+        <div class="tip-section">
+          <h3>Add a Tip</h3>
+
+          <div class="tip-buttons">
+            <button class="tip-btn" onclick="setTip(10, this)">10%</button>
+            <button class="tip-btn" onclick="setTip(15, this)">15%</button>
+            <button class="tip-btn" onclick="setTip(20, this)">20%</button>
+            <button class="tip-btn" onclick="setTip(0, this)">No Tip</button>
+          </div>
+
+          <p id="tip-display">Tip: 0%</p>
+        </div>
+        <div id="payment-form">
+          <div id="card-container"></div>
+          <button id="card-button" type="button">Pay</button>
         </div>
 
-        <p id="tip-display">Tip: 0%</p>
+        <div id="cash-form" style="display: none">
+          <div id="cash-status-container"></div>
+          <button id="cash-button" type="button">Pay</button>
+        </div>
       </div>
-      <div id="payment-form">
-        <div id="card-container"></div>
-        <button id="card-button" type="button">Pay</button>
-      </div>
-
-      <div id="cash-form" style="display: none">
-        <div id="cash-status-container"></div>
-        <button id="cash-button" type="button">Pay</button>
-      </div>
-
-      <!-- Alternative Action View State -->
     </div>
-    <title>Payment Form</title>
     <style>
       /* 1. Base Framework Layout (Updated to your custom light green) */
       body {
-        background-color: #d3ffb7; /* Updated to your hex code */
+        background-color: #d3ffb7;
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
+        padding: 40px 20px;
       }
       #payment-form-wrapper {
         max-width: 700px;
+        margin: 0 auto;
         width: 100%;
         padding: 20px;
         transform: scale(0.9);
         transform-origin: top center;
       }
-
       /* 2. Vertically Stacked and Centered Radio Selectors */
       .payment-methods {
         display: flex;
         justify-content: center;
         gap: 40px;
-        margin-bottom: 24px;
+        margin: 20px 0 24px 0;
       }
 
       .radio-option {
@@ -271,11 +268,46 @@
       .tip-btn.active {
         background: #8cc3ff;
       }
+      .tip-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin: 8px 0;
+      }
+      .form-wrapper {
+        display: grid;
+        grid-template-columns: 65% 40%;
+        gap: 32px;
+        align-items: start;
+        max-width: 1500px;
+        margin: 0 auto;
+      }
+      @media (max-width: 992px) {
+        .form-wrapper {
+          grid-template-columns: 1fr;
+        }
+      }
+      .left-column {
+        width: 100%;
+      }
+
+      .right-column {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
     </style>
 
     <!-- Square SDK Control Script Execution Block -->
     <script type="module">
       let selectedTip = 0;
+
+      function updateCheckoutButtons() {
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        document.getElementById('card-button').disabled = false;
+        document.getElementById('cash-button').disabled = false;
+      }
 
       const addressInput = document.getElementById('customer-address');
 
@@ -300,6 +332,8 @@
       );
       const card = await payments.card();
       await card.attach('#card-container');
+
+      updateCheckoutButtons();
 
       const cardButton = document.getElementById('card-button');
 
@@ -370,23 +404,28 @@
                 `${item.name} (${item.variationName}) x${item.quantity}`,
             )
             .join(', ');
-			
-localStorage.removeItem('cartItems');
 
-console.log(
-  'AFTER CLEAR:',
-  localStorage.getItem('cartItems')
-);
-		const subtotal = paymentResults.subtotal;
-		const deliveryFee = paymentResults.deliveryFee;
-		const salesTax = paymentResults.salesTax;
-		const tipAmount = paymentResults.tipAmount;
-		const grandTotal = paymentResults.grandTotal;
+          localStorage.removeItem('cartItems');
+
+          console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
+          const subtotal = paymentResults.subtotal;
+          const deliveryFee = paymentResults.deliveryFee;
+          const salesTax = paymentResults.salesTax;
+          const tipAmount = paymentResults.tipAmount;
+          const grandTotal = paymentResults.grandTotal;
+
+          console.log('PAYMENT RESULTS:', paymentResults);
+
+          console.log('subtotal', subtotal);
+          console.log('deliveryFee', deliveryFee);
+          console.log('salesTax', salesTax);
+          console.log('tipAmount', tipAmount);
+          console.log('grandTotal', grandTotal);
 
           window.location.href =
-		  `/confirmation?` +
-		  `orderId=${encodeURIComponent(paymentResults.payment.orderId)}` +
-		  `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
+            `/confirmation?` +
+            `orderId=${encodeURIComponent(paymentResults.payment.orderId)}` +
+            `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
             `&firstName=${encodeURIComponent(firstName)}` +
             `&lastName=${encodeURIComponent(lastName)}` +
             `&phone=${encodeURIComponent(phone)}` +
@@ -395,11 +434,11 @@ console.log(
             `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
             `&method=Card` +
             `&items=${encodeURIComponent(itemList)}` +
-			`&subtotal=${subtotal.toFixed(2)}` +
-			`&deliveryFee=${deliveryFee.toFixed(2)}` +
-			`&salesTax=${salesTax.toFixed(2)}` +
-			`&tip=${tipAmount.toFixed(2)}` +
-			`&total=${grandTotal.toFixed(2)}`;
+            `&subtotal=${subtotal.toFixed(2)}` +
+            `&deliveryFee=${deliveryFee.toFixed(2)}` +
+            `&salesTax=${salesTax.toFixed(2)}` +
+            `&tip=${tipAmount.toFixed(2)}` +
+            `&total=${grandTotal.toFixed(2)}`;
         } catch (err) {
           console.error('FULL ERROR:', err);
 
@@ -429,6 +468,13 @@ console.log(
           items: cartItems,
           tipPercent: selectedTip,
         });
+
+        if (cartItems.length === 0) {
+          alert(
+            'Please add at least one item to your cart before checking out.',
+          );
+          return;
+        }
 
         const paymentResponse = await fetch('/payment', {
           method: 'POST',
@@ -500,6 +546,13 @@ console.log(
             return;
           }
 
+          if (cartItems.length === 0) {
+            alert(
+              'Please add at least one item to your cart before checking out.',
+            );
+            return;
+          }
+
           const response = await fetch('/cash', {
             method: 'POST',
             headers: {
@@ -529,11 +582,11 @@ console.log(
             )
             .join(', ');
 
-		const subtotal = result.subtotal;
-		const deliveryFee = result.deliveryFee;
-		const salesTax = result.salesTax;
-		const tipAmount = result.tipAmount;
-		const grandTotal = result.grandTotal;
+          const subtotal = result.subtotal;
+          const deliveryFee = result.deliveryFee;
+          const salesTax = result.salesTax;
+          const tipAmount = result.tipAmount;
+          const grandTotal = result.grandTotal;
 
           if (!response.ok) {
             statusContainer.innerHTML =
@@ -542,13 +595,18 @@ console.log(
           }
 
           console.log('CASH RESULT:', result);
-		  
-localStorage.removeItem('cartItems');
 
-console.log(
-  'AFTER CLEAR:',
-  localStorage.getItem('cartItems')
-);
+          localStorage.removeItem('cartItems');
+
+          console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
+
+          console.log('CASH RESULT:', result);
+
+          console.log('subtotal', subtotal);
+          console.log('deliveryFee', deliveryFee);
+          console.log('salesTax', salesTax);
+          console.log('tipAmount', tipAmount);
+          console.log('grandTotal', grandTotal);
 
           window.location.href =
             `/confirmation?orderId=${result.orderId}` +
@@ -560,12 +618,11 @@ console.log(
             `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
             `&method=Cash` +
             `&items=${encodeURIComponent(itemList)}` +
-			`&subtotal=${subtotal.toFixed(2)}` +
-			`&deliveryFee=${deliveryFee.toFixed(2)}` +
-			`&salesTax=${salesTax.toFixed(2)}` +
-			`&tip=${tipAmount.toFixed(2)}` +
-			`&total=${grandTotal.toFixed(2)}`;
-			
+            `&subtotal=${subtotal.toFixed(2)}` +
+            `&deliveryFee=${deliveryFee.toFixed(2)}` +
+            `&salesTax=${salesTax.toFixed(2)}` +
+            `&tip=${tipAmount.toFixed(2)}` +
+            `&total=${grandTotal.toFixed(2)}`;
         } catch (err) {
           console.error('CASH ERROR:', err);
 
@@ -658,10 +715,6 @@ console.log(
         document.getElementById('cash-form').style.display = cashSelected
           ? 'block'
           : 'none';
-
-        // Optional: clear old messages when switching
-        document.getElementById('payment-status-container').innerHTML = '';
-        document.getElementById('cash-status-container').innerHTML = '';
       }
     </script>
   </div>

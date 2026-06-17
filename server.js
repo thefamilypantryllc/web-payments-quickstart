@@ -17,6 +17,13 @@ const { client: square } = require('./server/square');
 async function createPayment(req, res) {
   const payload = await json(req);
 
+  if (!payload.items || payload.items.length === 0) {
+    return send(res, 400, {
+      success: false,
+      error: 'Your cart is empty. Please add at least one item.',
+    });
+  }
+
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -69,22 +76,23 @@ async function createPayment(req, res) {
           })),
         },
       });
+      console.log('FULL ORDER RESPONSE');
+      console.dir(orderResponse, { depth: null });
 
-      const order = orderResponse.order;
-	  
-	  const subtotal = Number(order.totalMoney.amount) / 100;
+      console.log('FULL ORDER RESPONSE');
+      console.dir(orderResponse, { depth: null });
 
-	const deliveryFee = subtotal < 40 ? 3.00 : 0;
+      const order = orderResponse.result?.order || orderResponse.order;
 
-	const salesTax = subtotal * 0.08225;
+      const subtotal = Number(order.totalMoney.amount) / 100;
 
-	const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
+      const deliveryFee = subtotal < 40 ? 3.0 : 0;
 
-	const grandTotal =
-	  subtotal +
-	  deliveryFee +
-	  salesTax +
-	  tipAmount;
+      const salesTax = subtotal * 0.08225;
+
+      const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
+
+      const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
 
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
@@ -94,15 +102,12 @@ async function createPayment(req, res) {
         locationId: payload.locationId,
         sourceId: payload.sourceId,
 
-		amountMoney: {
-		  amount: BigInt(Math.round(grandTotal * 100)),
-		  currency: 'USD',
-		},
+        amountMoney: {
+          amount: BigInt(Math.round(grandTotal * 100)),
+          currency: 'USD',
+        },
       };
-	  console.log(
-  'PAYMENT AMOUNT:',
-  BigInt(Math.round(grandTotal * 100))
-);
+      console.log('PAYMENT AMOUNT:', BigInt(Math.round(grandTotal * 100)));
 
       if (payload.customerId) {
         payment.customerId = payload.customerId;
@@ -115,34 +120,35 @@ async function createPayment(req, res) {
         payment.verificationToken = payload.verificationToken;
       }
 
-      const { payment: paymentResponse } = await square.payments.create(payment);
+      const { payment: paymentResponse } =
+        await square.payments.create(payment);
 
-	logger.info('Payment succeeded!', { paymentResponse });
+      logger.info('Payment succeeded!', { paymentResponse });
 
-	return send(res, 200, {
-	  success: true,
+      return send(res, 200, {
+        success: true,
 
-	  payment: {
-		id: paymentResponse.id,
-		status: paymentResponse.status,
-		receiptUrl: paymentResponse.receiptUrl,
-	  },
+        payment: {
+          id: paymentResponse.id,
+          status: paymentResponse.status,
+          receiptUrl: paymentResponse.receiptUrl,
+        },
 
-	  status: 'PAID',
+        status: 'PAID',
 
-	  subtotal,
-	  deliveryFee,
-	  salesTax,
-	  tipAmount,
-	  grandTotal,
+        subtotal,
+        deliveryFee,
+        salesTax,
+        tipAmount,
+        grandTotal,
 
-	  items: order.lineItems.map((item) => ({
-		name: item.name,
-		variationName: item.variationName,
-		quantity: item.quantity,
-	  })),
-	});
-	    } catch (ex) {
+        items: (order.lineItems || []).map((item) => ({
+          name: item.name,
+          variationName: item.variationName,
+          quantity: item.quantity,
+        })),
+      });
+    } catch (ex) {
       if (ex.errors) {
         logger.error(ex.errors);
         bail(ex);
@@ -207,6 +213,13 @@ async function storeCard(req, res) {
 async function createCashOrder(req, res) {
   const payload = await json(req);
 
+  if (!payload.items || payload.items.length === 0) {
+    return send(res, 400, {
+      success: false,
+      error: 'Your cart is empty. Please add at least one item.',
+    });
+  }
+
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -246,7 +259,7 @@ async function createCashOrder(req, res) {
       order: {
         locationId: payload.locationId,
 
-        lineItems: payload.items.map((item) => ({
+        lineItems: (payload.items || []).map((item) => ({
           catalogObjectId: item.catalogObjectId,
           quantity: item.quantity,
         })),
@@ -259,57 +272,49 @@ async function createCashOrder(req, res) {
 
     const order = response.order;
 
-	const subtotal = Number(order.totalMoney.amount) / 100;
+    const subtotal = Number(order.totalMoney.amount) / 100;
 
-	const deliveryFee = subtotal < 40 ? 3.00 : 0;
+    const deliveryFee = subtotal < 40 ? 3.0 : 0;
 
-	const salesTax =
-  Math.round(subtotal * 0.08225 * 100) / 100;
+    const salesTax = Math.round(subtotal * 0.08225 * 100) / 100;
 
-	const tipAmount =
-	  Math.round(
-		subtotal * ((payload.tipPercent || 0) / 100) * 100
-	  ) / 100;
+    const tipAmount =
+      Math.round(subtotal * ((payload.tipPercent || 0) / 100) * 100) / 100;
 
-	const grandTotal =
-	  subtotal +
-	  deliveryFee +
-	  salesTax +
-	  tipAmount;
+    const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
 
-	console.log('SUBTOTAL:', subtotal);
-	console.log('DELIVERY:', deliveryFee);
-	console.log('TAX:', salesTax);
-	console.log('TIP:', tipAmount);
-	console.log('GRAND TOTAL:', grandTotal);
+    console.log('SUBTOTAL:', subtotal);
+    console.log('DELIVERY:', deliveryFee);
+    console.log('TAX:', salesTax);
+    console.log('TIP:', tipAmount);
+    console.log('GRAND TOTAL:', grandTotal);
 
-	return send(res, 200, {
-	  success: true,
+    return send(res, 200, {
+      success: true,
 
-	  status: 'OPEN',
+      status: 'OPEN',
 
-	  subtotal,
-	  deliveryFee,
-	  salesTax,
-	  tipAmount,
-	  grandTotal,
+      subtotal,
+      deliveryFee,
+      salesTax,
+      tipAmount,
+      grandTotal,
 
-	  items: order.lineItems.map((item) => ({
-		name: item.name,
-		variationName: item.variationName,
-		quantity: item.quantity,
-	  })),
-	});
+      items: (order.lineItems || []).map((item) => ({
+        name: item.name,
+        variationName: item.variationName,
+        quantity: item.quantity,
+      })),
+    });
+  } catch (err) {
+    console.error('CASH ERROR:', err);
 
-	  } catch (err) {
-		console.error('CASH ERROR:', err);
-
-		return send(res, 500, {
-		  success: false,
-		  error: err.message,
-		});
-	  }
-	}
+    return send(res, 500, {
+      success: false,
+      error: err.message,
+    });
+  }
+}
 async function getCatalog(req, res) {
   try {
     const response = await square.catalog.list();
