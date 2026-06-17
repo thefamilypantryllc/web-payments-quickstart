@@ -6,8 +6,8 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "set NODE_ENV=production && micro --listen tcp://127.0.0.1:3000",
-    "start:sandbox": "set NODE_ENV=sandbox && micro --listen tcp://127.0.0.1:3000",
+    "start": "set NODE_ENV=production && micro --listen tcp://127.0.0.1:$PORT",
+    "start:sandbox": "set NODE_ENV=sandbox && micro --listen tcp://127.0.0.1:$PORT",
     "inspect": "node --inspect node_modules/.bin/micro-dev",
     "dev": "micro-dev",
     "lint": "npm-run-all --serial lint:*",
