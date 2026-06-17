@@ -397,6 +397,37 @@ async function validateDeliveryAddress(req, res) {
     });
   }
 }
+async function cartSummary(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+
+  const items = JSON.parse(decodeURIComponent(url.searchParams.get('items')));
+
+  const response = await square.orders.create({
+    idempotencyKey: crypto.randomUUID(),
+
+    order: {
+      locationId: process.env.SQUARE_LOCATION_ID,
+
+      lineItems: items.map((item) => ({
+        catalogObjectId: item.catalogObjectId,
+        quantity: item.quantity,
+      })),
+    },
+  });
+
+  const order = response.order;
+
+  return send(res, 200, {
+    items: order.lineItems.map((item) => ({
+      name: item.name,
+      variationName: item.variationName,
+      quantity: item.quantity,
+      totalPrice: Number(item.totalMoney.amount) / 100,
+    })),
+
+    subtotal: Number(order.totalMoney.amount) / 100,
+  });
+}
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
 
@@ -412,6 +443,6 @@ module.exports = router(
   get('/catalog', getCatalog),
   get('/address-search', addressSearch),
   post('/validate-address', validateDeliveryAddress),
-
+  get('/cart-summary', cartSummary),
   get('/*', serveStatic),
 );

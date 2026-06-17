@@ -81,473 +81,433 @@
           </div>
 
           <p id="tip-display">Tip: 0%</p>
-        </div>
-        <div id="payment-form">
-          <div id="card-container"></div>
-          <button id="card-button" type="button">Pay</button>
-        </div>
+          <div class="checkout-section">
+            <div class="checkout-title">Order Summary</div>
 
-        <div id="cash-form" style="display: none">
-          <div id="cash-status-container"></div>
-          <button id="cash-button" type="button">Pay</button>
+            <div id="order-summary-items"></div>
+
+            <hr />
+            Subtotal: $<span id="subtotal">0.00</span><br />
+            Delivery Fee: $<span id="delivery-fee">0.00</span><br />
+            Sales Tax: $<span id="sales-tax">0.00</span><br />
+            Tip: $<span id="tip-amount">0.00</span><br />
+
+            <h3>Total: $<span id="grand-total">0.00</span></h3>
+          </div>
+          <div id="payment-form">
+            <div id="card-container"></div>
+            <button id="card-button" type="button">Pay</button>
+          </div>
+
+          <div id="cash-form" style="display: none">
+            <div id="cash-status-container"></div>
+            <button id="cash-button" type="button">Pay</button>
+          </div>
         </div>
       </div>
-    </div>
-    <style>
-      /* 1. Base Framework Layout (Updated to your custom light green) */
-      body {
-        background-color: #d3ffb7;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 40px 20px;
-      }
-      #payment-form-wrapper {
-        max-width: 700px;
-        margin: 0 auto;
-        width: 100%;
-        padding: 20px;
-        transform: scale(0.9);
-        transform-origin: top center;
-      }
-      /* 2. Vertically Stacked and Centered Radio Selectors */
-      .payment-methods {
-        display: flex;
-        justify-content: center;
-        gap: 40px;
-        margin: 20px 0 24px 0;
-      }
-
-      .radio-option {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        color: #1a304a;
-        font-size: 16px;
-        font-weight: 500;
-      }
-
-      .radio-option input[type='radio'] {
-        margin: 0;
-        width: 18px;
-        height: 18px;
-      }
-
-      /* 3. White Card Container Layout Box */
-      #card-container {
-        background: #ffffff;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 20px;
-        box-sizing: border-box;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        min-height: 90px;
-      }
-      /* 4. Action Buttons Style Configuration */
-      #card-button,
-      #cash-button {
-        background-color: #8cc3ff;
-        color: #1a304a;
-        font-weight: bold;
-        font-size: 16px;
-        border: none;
-        border-radius: 8px;
-        padding: 16px;
-        width: 100%;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      }
-      #card-button:hover,
-      #cash-button:hover {
-        background-color: #7ab5f0;
-      }
-      .checkout-section {
-        background: #ffffff;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      .checkout-title {
-        color: #1a304a;
-        font-size: 20px;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 16px;
-      }
-
-      .checkout-label {
-        display: block;
-        color: #1a304a;
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 6px;
-      }
-
-      .checkout-input,
-      .checkout-select {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 16px;
-        border: 1px solid #d6dce5;
-        border-radius: 8px;
-        box-sizing: border-box;
-        font-size: 15px;
-        color: #1a304a;
-        background: #ffffff;
-      }
-
-      .checkout-input:focus,
-      .checkout-select:focus {
-        outline: none;
-        border-color: #8cc3ff;
-        box-shadow: 0 0 0 3px rgba(140, 195, 255, 0.3);
-      }
-
-      /* 5. System Status Notifications */
-      #payment-status-container {
-        color: #1a304a; /* Dark text for visibility on light green */
-        text-align: center;
-        margin-bottom: 15px;
-        font-size: 14px;
-      }
-      #cash-status-container {
-        color: #1a304a; /* Dark text for visibility on light green */
-        text-align: center;
-        margin-bottom: 15px;
-        font-size: 14px;
-      }
-      .address-wrapper {
-        position: relative;
-      }
-      #address-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-
-        background: white;
-        border: 1px solid #d6dce5;
-        border-radius: 0 0 8px 8px;
-
-        max-height: 250px;
-        overflow-y: auto;
-
-        z-index: 9999;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-      }
-
-      .address-option {
-        padding: 12px 16px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .address-option:hover {
-        background: #f5f9ff;
-      }
-
-      .tip-btn {
-        background: white;
-        border: 2px solid #8cc3ff;
-        color: #1a304a;
-        font-weight: bold;
-        padding: 10px 18px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-      }
-
-      .tip-btn:hover {
-        background: #8cc3ff;
-      }
-
-      .tip-btn.active {
-        background: #8cc3ff;
-      }
-      .tip-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin: 8px 0;
-      }
-      .form-wrapper {
-        display: grid;
-        grid-template-columns: 65% 40%;
-        gap: 32px;
-        align-items: start;
-        max-width: 1500px;
-        margin: 0 auto;
-      }
-      @media (max-width: 992px) {
-        .form-wrapper {
-          grid-template-columns: 1fr;
+      <style>
+        /* 1. Base Framework Layout (Updated to your custom light green) */
+        body {
+          background-color: #d3ffb7;
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 40px 20px;
         }
-      }
-      .left-column {
-        width: 100%;
-      }
+        #payment-form-wrapper {
+          max-width: 700px;
+          margin: 0 auto;
+          width: 100%;
+          padding: 20px;
+          transform: scale(0.9);
+          transform-origin: top center;
+        }
+        /* 2. Vertically Stacked and Centered Radio Selectors */
+        .payment-methods {
+          display: flex;
+          justify-content: center;
+          gap: 40px;
+          margin: 20px 0 24px 0;
+        }
 
-      .right-column {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-      }
-    </style>
+        .radio-option {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          color: #1a304a;
+          font-size: 16px;
+          font-weight: 500;
+        }
 
-    <!-- Square SDK Control Script Execution Block -->
-    <script type="module">
-      let selectedTip = 0;
+        .radio-option input[type='radio'] {
+          margin: 0;
+          width: 18px;
+          height: 18px;
+        }
 
-      function updateCheckoutButtons() {
-        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+        /* 3. White Card Container Layout Box */
+        #card-container {
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 20px;
+          box-sizing: border-box;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          min-height: 90px;
+        }
+        /* 4. Action Buttons Style Configuration */
+        #card-button,
+        #cash-button {
+          background-color: #8cc3ff;
+          color: #1a304a;
+          font-weight: bold;
+          font-size: 16px;
+          border: none;
+          border-radius: 8px;
+          padding: 16px;
+          width: 100%;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+        #card-button:hover,
+        #cash-button:hover {
+          background-color: #7ab5f0;
+        }
+        .checkout-section {
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 20px;
+          margin-bottom: 24px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
 
-        document.getElementById('card-button').disabled = false;
-        document.getElementById('cash-button').disabled = false;
-      }
+        .checkout-title {
+          color: #1a304a;
+          font-size: 20px;
+          font-weight: bold;
+          text-align: center;
+          margin-bottom: 16px;
+        }
 
-      const addressInput = document.getElementById('customer-address');
+        .checkout-label {
+          display: block;
+          color: #1a304a;
+          font-size: 14px;
+          font-weight: bold;
+          margin-bottom: 6px;
+        }
 
-      const suggestions = document.getElementById('address-suggestions');
+        .checkout-input,
+        .checkout-select {
+          width: 100%;
+          padding: 12px;
+          margin-bottom: 16px;
+          border: 1px solid #d6dce5;
+          border-radius: 8px;
+          box-sizing: border-box;
+          font-size: 15px;
+          color: #1a304a;
+          background: #ffffff;
+        }
 
-      window.setTip = function (percent, button) {
-        selectedTip = percent;
+        .checkout-input:focus,
+        .checkout-select:focus {
+          outline: none;
+          border-color: #8cc3ff;
+          box-shadow: 0 0 0 3px rgba(140, 195, 255, 0.3);
+        }
 
-        document.getElementById('tip-display').textContent = `Tip: ${percent}%`;
+        /* 5. System Status Notifications */
+        #payment-status-container {
+          color: #1a304a; /* Dark text for visibility on light green */
+          text-align: center;
+          margin-bottom: 15px;
+          font-size: 14px;
+        }
+        #cash-status-container {
+          color: #1a304a; /* Dark text for visibility on light green */
+          text-align: center;
+          margin-bottom: 15px;
+          font-size: 14px;
+        }
+        .address-wrapper {
+          position: relative;
+        }
+        #address-suggestions {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
 
-        document.querySelectorAll('.tip-btn').forEach((btn) => {
-          btn.classList.remove('active');
-        });
+          background: white;
+          border: 1px solid #d6dce5;
+          border-radius: 0 0 8px 8px;
 
-        button.classList.add('active');
-      };
+          max-height: 250px;
+          overflow-y: auto;
 
-      const locationId = 'LQDHY43WBKWXT';
-      const payments = Square.payments(
-        'sandbox-sq0idb-K4jPLo1VWDr-iUoZBXTt2g',
-        'LQDHY43WBKWXT',
-      );
-      const card = await payments.card();
-      await card.attach('#card-container');
+          z-index: 9999;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
 
-      window.addEventListener('pageshow', () => {
-  updateCheckoutButtons();
-});
+        .address-option {
+          padding: 12px 16px;
+          cursor: pointer;
+          border-bottom: 1px solid #eee;
+        }
 
-      const cardButton = document.getElementById('card-button');
+        .address-option:hover {
+          background: #f5f9ff;
+        }
 
-      cardButton.addEventListener('click', async () => {
-        const statusContainer = document.getElementById(
-          'payment-status-container',
-        );
+        .tip-btn {
+          background: white;
+          border: 2px solid #8cc3ff;
+          color: #1a304a;
+          font-weight: bold;
+          padding: 10px 18px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+        }
 
-        try {
-          const firstName = document.getElementById(
-            'customer-first-name',
-          ).value;
+        .tip-btn:hover {
+          background: #8cc3ff;
+        }
 
-          const lastName = document.getElementById('customer-last-name').value;
-
-          const phone = document.getElementById('customer-phone').value;
-
-          const email = document.getElementById('customer-email').value;
-
-          const addressInput = document.getElementById('customer-address');
-
-          const address = document.getElementById('customer-address').value;
-
-          const deliveryTime = document.getElementById('delivery-time').value;
-
-          const lat = addressInput.dataset.lat;
-          const lon = addressInput.dataset.lon;
-
-          if (!lat || !lon) {
-            alert('Address outside delivery area.');
-            return;
+        .tip-btn.active {
+          background: #8cc3ff;
+        }
+        .tip-buttons {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin: 8px 0;
+        }
+        .form-wrapper {
+          display: grid;
+          grid-template-columns: 65% 40%;
+          gap: 32px;
+          align-items: start;
+          max-width: 1500px;
+          margin: 0 auto;
+        }
+        @media (max-width: 992px) {
+          .form-wrapper {
+            grid-template-columns: 1fr;
           }
-          const validation = await fetch('/validate-address', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              lat,
-              lon,
-            }),
+        }
+        .left-column {
+          width: 100%;
+        }
+
+        .right-column {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+      </style>
+
+      <!-- Square SDK Control Script Execution Block -->
+      <script type="module">
+        let selectedTip = 0;
+
+        function updateCheckoutButtons() {
+          const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+          document.getElementById('card-button').disabled = false;
+          document.getElementById('cash-button').disabled = false;
+        }
+		let summary = { items: [], subtotal: 0 };
+
+		function updateOrderSummary() {
+		  const subtotal = Number(summary.subtotal || 0);
+		  const deliveryFee = subtotal < 40 ? 3 : 0;
+		  const salesTax = subtotal * 0.08225;
+		  const tipAmount = subtotal * (selectedTip / 100);
+		  const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+
+		  document.getElementById('subtotal').textContent =
+			subtotal.toFixed(2);
+
+		  document.getElementById('delivery-fee').textContent =
+			deliveryFee.toFixed(2);
+
+		  document.getElementById('sales-tax').textContent =
+			salesTax.toFixed(2);
+
+		  document.getElementById('tip-amount').textContent =
+			tipAmount.toFixed(2);
+
+		  document.getElementById('grand-total').textContent =
+			grandTotal.toFixed(2);
+		}
+
+        const addressInput = document.getElementById('customer-address');
+
+        const suggestions = document.getElementById('address-suggestions');
+
+        window.setTip = function (percent, button) {
+          selectedTip = percent;
+          updateOrderSummary();
+
+          document.getElementById('tip-display').textContent =
+            `Tip: ${percent}%`;
+
+          document.querySelectorAll('.tip-btn').forEach((btn) => {
+            btn.classList.remove('active');
           });
 
-          const deliveryCheck = await validation.json();
+          button.classList.add('active');
+        };
 
-          if (!deliveryCheck.allowed) {
-            alert(
-              `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. Delivery is limited to 15 miles.`,
-            );
-            return;
-          }
-          const tokenResult = await card.tokenize();
-
-          if (tokenResult.status !== 'OK') {
-            console.log(JSON.stringify(tokenResult.errors, null, 2));
-            throw new Error('Tokenization failed');
-          }
-
-          console.log('Creating payment...');
-
-          const paymentResults = await CreatePayment(tokenResult.token);
-
-          console.log('PAYMENT RESULT:', paymentResults);
-
-          const itemList = paymentResults.items
-            .map(
-              (item) =>
-                `${item.name} (${item.variationName}) x${item.quantity}`,
-            )
-            .join(', ');
-
-          localStorage.removeItem('cartItems');
-		  updateCheckoutButtons();
-
-          console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
-          const subtotal = paymentResults.subtotal;
-          const deliveryFee = paymentResults.deliveryFee;
-          const salesTax = paymentResults.salesTax;
-          const tipAmount = paymentResults.tipAmount;
-          const grandTotal = paymentResults.grandTotal;
-
-          console.log('PAYMENT RESULTS:', paymentResults);
-
-          console.log('subtotal', subtotal);
-          console.log('deliveryFee', deliveryFee);
-          console.log('salesTax', salesTax);
-          console.log('tipAmount', tipAmount);
-          console.log('grandTotal', grandTotal);
-
-          window.location.href =
-            `/confirmation?` +
-            `orderId=${encodeURIComponent(paymentResults.payment.orderId)}` +
-            `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
-            `&firstName=${encodeURIComponent(firstName)}` +
-            `&lastName=${encodeURIComponent(lastName)}` +
-            `&phone=${encodeURIComponent(phone)}` +
-            `&email=${encodeURIComponent(email)}` +
-            `&address=${encodeURIComponent(address)}` +
-            `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
-            `&method=Card` +
-            `&items=${encodeURIComponent(itemList)}` +
-            `&subtotal=${subtotal.toFixed(2)}` +
-            `&deliveryFee=${deliveryFee.toFixed(2)}` +
-            `&salesTax=${salesTax.toFixed(2)}` +
-            `&tip=${tipAmount.toFixed(2)}` +
-            `&total=${grandTotal.toFixed(2)}`;
-        } catch (err) {
-          console.error('FULL ERROR:', err);
-
-          statusContainer.innerHTML = 'Payment Failed';
-        }
-      });
-      async function CreatePayment(token) {
-        const firstName = document.getElementById('customer-first-name').value;
-        const lastName = document.getElementById('customer-last-name').value;
-        const phone = document.getElementById('customer-phone').value;
-        const email = document.getElementById('customer-email').value;
-        const address = document.getElementById('customer-address').value;
-        const deliveryTime = document.getElementById('delivery-time').value;
-
-        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
-
-        const body = JSON.stringify({
-          locationId,
-          sourceId: token,
-          idempotencyKey: crypto.randomUUID(),
-          firstName,
-          lastName,
-          phone,
-          email,
-          address,
-          deliveryTime,
-          items: cartItems,
-          tipPercent: selectedTip,
-        });
-
-        if (cartItems.length === 0) {
-          alert(
-            'Please add at least one item to your cart before checking out.',
-          );
-          return;
-        }
-
-        const paymentResponse = await fetch('/payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body,
-        });
-
-        if (paymentResponse.ok) {
-          return paymentResponse.json();
-        }
-
-        throw new Error(await paymentResponse.text());
-      }
-
-      const cashButton = document.getElementById('cash-button');
-
-      cashButton.addEventListener('click', async () => {
-        const statusContainer = document.getElementById(
-          'cash-status-container',
+        const locationId = 'LQDHY43WBKWXT';
+        const payments = Square.payments(
+          'sandbox-sq0idb-K4jPLo1VWDr-iUoZBXTt2g',
+          'LQDHY43WBKWXT',
         );
+        const card = await payments.card();
+        await card.attach('#card-container');
 
-        try {
+        window.addEventListener('pageshow', () => {
+          updateCheckoutButtons();
+        });
+
+        const cardButton = document.getElementById('card-button');
+
+        cardButton.addEventListener('click', async () => {
+          const statusContainer = document.getElementById(
+            'payment-status-container',
+          );
+
+          try {
+            const firstName = document.getElementById(
+              'customer-first-name',
+            ).value;
+
+            const lastName =
+              document.getElementById('customer-last-name').value;
+
+            const phone = document.getElementById('customer-phone').value;
+
+            const email = document.getElementById('customer-email').value;
+
+            const addressInput = document.getElementById('customer-address');
+
+            const address = document.getElementById('customer-address').value;
+
+            const deliveryTime = document.getElementById('delivery-time').value;
+
+            const lat = addressInput.dataset.lat;
+            const lon = addressInput.dataset.lon;
+
+            if (!lat || !lon) {
+              alert('Address outside delivery area.');
+              return;
+            }
+            const validation = await fetch('/validate-address', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                lat,
+                lon,
+              }),
+            });
+
+            const deliveryCheck = await validation.json();
+
+            if (!deliveryCheck.allowed) {
+              alert(
+                `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. Delivery is limited to 15 miles.`,
+              );
+              return;
+            }
+            const tokenResult = await card.tokenize();
+
+            if (tokenResult.status !== 'OK') {
+              console.log(JSON.stringify(tokenResult.errors, null, 2));
+              throw new Error('Tokenization failed');
+            }
+
+            console.log('Creating payment...');
+
+            const paymentResults = await CreatePayment(tokenResult.token);
+
+            console.log('PAYMENT RESULT:', paymentResults);
+
+            const itemList = paymentResults.items
+              .map(
+                (item) =>
+                  `${item.name} (${item.variationName}) x${item.quantity}`,
+              )
+              .join(', ');
+
+            localStorage.removeItem('cartItems');
+            updateCheckoutButtons();
+
+            console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
+            updateOrderSummary();
+
+            console.log('PAYMENT RESULTS:', paymentResults);
+			
+			const subtotal = Number(summary.subtotal || 0);
+			const deliveryFee = subtotal < 40 ? 3 : 0;
+			const salesTax = subtotal * 0.08225;
+			const tipAmount = subtotal * (selectedTip / 100);
+			const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+
+            window.location.href =
+              `/confirmation?` +
+              `orderId=${encodeURIComponent(paymentResults.payment.orderId)}` +
+              `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
+              `&firstName=${encodeURIComponent(firstName)}` +
+              `&lastName=${encodeURIComponent(lastName)}` +
+              `&phone=${encodeURIComponent(phone)}` +
+              `&email=${encodeURIComponent(email)}` +
+              `&address=${encodeURIComponent(address)}` +
+              `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
+              `&method=Card` +
+              `&items=${encodeURIComponent(itemList)}` +
+              `&subtotal=${subtotal.toFixed(2)}` +
+              `&deliveryFee=${deliveryFee.toFixed(2)}` +
+              `&salesTax=${salesTax.toFixed(2)}` +
+              `&tip=${tipAmount.toFixed(2)}` +
+              `&total=${grandTotal.toFixed(2)}`;
+          } catch (err) {
+            console.error('FULL ERROR:', err);
+
+            statusContainer.innerHTML = 'Payment Failed';
+          }
+        });
+        async function CreatePayment(token) {
           const firstName = document.getElementById(
             'customer-first-name',
           ).value;
-
           const lastName = document.getElementById('customer-last-name').value;
-
           const phone = document.getElementById('customer-phone').value;
-
           const email = document.getElementById('customer-email').value;
-
           const address = document.getElementById('customer-address').value;
-
           const deliveryTime = document.getElementById('delivery-time').value;
 
           const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
 
-          console.log('SELECTED TIP:', selectedTip);
-
-          const lat = addressInput.dataset.lat;
-          const lon = addressInput.dataset.lon;
-
-          console.log('LAT:', lat);
-          console.log('LON:', lon);
-
-          if (!lat || !lon) {
-            statusContainer.innerHTML = 'Address outside delivery area.';
-            return;
-          }
-          const validation = await fetch('/validate-address', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              lat,
-              lon,
-            }),
+          const body = JSON.stringify({
+            locationId,
+            sourceId: token,
+            idempotencyKey: crypto.randomUUID(),
+            firstName,
+            lastName,
+            phone,
+            email,
+            address,
+            deliveryTime,
+            items: cartItems,
+            tipPercent: selectedTip,
           });
-
-          const deliveryCheck = await validation.json();
-
-          if (!deliveryCheck.allowed) {
-            statusContainer.innerHTML = `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. We only deliver within 15 miles.`;
-
-            return;
-          }
 
           if (cartItems.length === 0) {
             alert(
@@ -556,170 +516,298 @@
             return;
           }
 
-          const response = await fetch('/cash', {
+          const paymentResponse = await fetch('/payment', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              paymentMethod: 'Cash',
-              locationId,
-              idempotencyKey: crypto.randomUUID(),
-              firstName,
-              lastName,
-              phone,
-              email,
-              address,
-              deliveryTime,
-              items: cartItems,
-              tipPercent: selectedTip,
-            }),
+            body,
           });
 
-          const result = await response.json();
-
-          const itemList = result.items
-            .map(
-              (item) =>
-                `${item.name} (${item.variationName}) x${item.quantity}`,
-            )
-            .join(', ');
-
-          const subtotal = result.subtotal;
-          const deliveryFee = result.deliveryFee;
-          const salesTax = result.salesTax;
-          const tipAmount = result.tipAmount;
-          const grandTotal = result.grandTotal;
-
-          if (!response.ok) {
-            statusContainer.innerHTML =
-              result.error || 'Cash order submission failed';
-            return;
+          if (paymentResponse.ok) {
+            return paymentResponse.json();
           }
 
-          console.log('CASH RESULT:', result);
-
-          localStorage.removeItem('cartItems');
-		  updateCheckoutButtons();
-
-          console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
-
-          console.log('CASH RESULT:', result);
-
-          console.log('subtotal', subtotal);
-          console.log('deliveryFee', deliveryFee);
-          console.log('salesTax', salesTax);
-          console.log('tipAmount', tipAmount);
-          console.log('grandTotal', grandTotal);
-
-          window.location.href =
-            `/confirmation?orderId=${result.orderId}` +
-            `&firstName=${encodeURIComponent(firstName)}` +
-            `&lastName=${encodeURIComponent(lastName)}` +
-            `&phone=${encodeURIComponent(phone)}` +
-            `&email=${encodeURIComponent(email)}` +
-            `&address=${encodeURIComponent(address)}` +
-            `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
-            `&method=Cash` +
-            `&items=${encodeURIComponent(itemList)}` +
-            `&subtotal=${subtotal.toFixed(2)}` +
-            `&deliveryFee=${deliveryFee.toFixed(2)}` +
-            `&salesTax=${salesTax.toFixed(2)}` +
-            `&tip=${tipAmount.toFixed(2)}` +
-            `&total=${grandTotal.toFixed(2)}`;
-        } catch (err) {
-          console.error('CASH ERROR:', err);
-
-          statusContainer.innerHTML =
-            'Cash order submission failed: ' + err.message;
-        }
-      });
-
-      addressInput.addEventListener('input', async () => {
-        const query = addressInput.value;
-
-        // Clear previous coordinates whenever user types
-        addressInput.dataset.lat = '';
-        addressInput.dataset.lon = '';
-
-        if (query.length < 2) {
-          suggestions.innerHTML = '';
-          suggestions.style.display = 'none';
-          return;
+          throw new Error(await paymentResponse.text());
         }
 
-        try {
-          console.log('Searching:', query);
+        const cashButton = document.getElementById('cash-button');
 
-          const response = await fetch(
-            `/address-search?q=${encodeURIComponent(query)}`,
+        cashButton.addEventListener('click', async () => {
+          const statusContainer = document.getElementById(
+            'cash-status-container',
           );
 
-          const data = await response.json();
+          try {
+            const firstName = document.getElementById(
+              'customer-first-name',
+            ).value;
 
-          console.log('AZURE RESPONSE:', data);
+            const lastName =
+              document.getElementById('customer-last-name').value;
 
-          suggestions.innerHTML = '';
+            const phone = document.getElementById('customer-phone').value;
 
-          if (!data.results || !data.results.length) {
+            const email = document.getElementById('customer-email').value;
+
+            const address = document.getElementById('customer-address').value;
+
+            const deliveryTime = document.getElementById('delivery-time').value;
+
+            const cartItems =
+              JSON.parse(localStorage.getItem('cartItems')) || [];
+
+            console.log('SELECTED TIP:', selectedTip);
+
+            const lat = addressInput.dataset.lat;
+            const lon = addressInput.dataset.lon;
+
+            console.log('LAT:', lat);
+            console.log('LON:', lon);
+
+            if (!lat || !lon) {
+              statusContainer.innerHTML = 'Address outside delivery area.';
+              return;
+            }
+            const validation = await fetch('/validate-address', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                lat,
+                lon,
+              }),
+            });
+
+            const deliveryCheck = await validation.json();
+
+            if (!deliveryCheck.allowed) {
+              statusContainer.innerHTML = `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. We only deliver within 15 miles.`;
+
+              return;
+            }
+
+            if (cartItems.length === 0) {
+              alert(
+                'Please add at least one item to your cart before checking out.',
+              );
+              return;
+            }
+
+            const response = await fetch('/cash', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                paymentMethod: 'Cash',
+                locationId,
+                idempotencyKey: crypto.randomUUID(),
+                firstName,
+                lastName,
+                phone,
+                email,
+                address,
+                deliveryTime,
+                items: cartItems,
+                tipPercent: selectedTip,
+              }),
+            });
+
+            const result = await response.json();
+            const subtotal = result.subtotal;
+			const deliveryFee = result.deliveryFee;
+			const salesTax = result.salesTax;
+			const tipAmount = result.tipAmount;
+			const grandTotal = result.grandTotal;
+
+            const itemList = result.items
+              .map(
+                (item) =>
+                  `${item.name} (${item.variationName}) x${item.quantity}`,
+              )
+              .join(', ');
+
+            if (!response.ok) {
+              statusContainer.innerHTML =
+                result.error || 'Cash order submission failed';
+              return;
+            }
+
+            console.log('CASH RESULT:', result);
+
+            localStorage.removeItem('cartItems');
+            updateCheckoutButtons();
+
+            console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
+
+            console.log('CASH RESULT:', result);
+
+            console.log('subtotal', subtotal);
+            console.log('deliveryFee', deliveryFee);
+            console.log('salesTax', salesTax);
+            console.log('tipAmount', tipAmount);
+            console.log('grandTotal', grandTotal);
+
+            window.location.href =
+              `/confirmation?orderId=${result.orderId}` +
+              `&firstName=${encodeURIComponent(firstName)}` +
+              `&lastName=${encodeURIComponent(lastName)}` +
+              `&phone=${encodeURIComponent(phone)}` +
+              `&email=${encodeURIComponent(email)}` +
+              `&address=${encodeURIComponent(address)}` +
+              `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
+              `&method=Cash` +
+              `&items=${encodeURIComponent(itemList)}` +
+              `&subtotal=${subtotal.toFixed(2)}` +
+              `&deliveryFee=${deliveryFee.toFixed(2)}` +
+              `&salesTax=${salesTax.toFixed(2)}` +
+              `&tip=${tipAmount.toFixed(2)}` +
+              `&total=${grandTotal.toFixed(2)}`;
+          } catch (err) {
+            console.error('CASH ERROR:', err);
+
+            statusContainer.innerHTML =
+              'Cash order submission failed: ' + err.message;
+          }
+        });
+
+        addressInput.addEventListener('input', async () => {
+          const query = addressInput.value;
+
+          // Clear previous coordinates whenever user types
+          addressInput.dataset.lat = '';
+          addressInput.dataset.lon = '';
+
+          if (query.length < 2) {
+            suggestions.innerHTML = '';
             suggestions.style.display = 'none';
             return;
           }
 
-          data.results.forEach((result) => {
-            const option = document.createElement('div');
+          try {
+            console.log('Searching:', query);
 
-            option.className = 'address-option';
-            option.textContent = result.address.freeformAddress;
+            const response = await fetch(
+              `/address-search?q=${encodeURIComponent(query)}`,
+            );
 
-            option.addEventListener('click', () => {
-              addressInput.value = result.address.freeformAddress;
+            const data = await response.json();
 
-              addressInput.dataset.lat = result.position.lat;
-              addressInput.dataset.lon = result.position.lon;
+            console.log('AZURE RESPONSE:', data);
 
-              console.log('SELECTED ADDRESS:', result.address.freeformAddress);
+            suggestions.innerHTML = '';
 
-              console.log(
-                'COORDINATES:',
-                result.position.lat,
-                result.position.lon,
-              );
-
-              suggestions.innerHTML = '';
+            if (!data.results || !data.results.length) {
               suggestions.style.display = 'none';
+              return;
+            }
+
+            data.results.forEach((result) => {
+              const option = document.createElement('div');
+
+              option.className = 'address-option';
+              option.textContent = result.address.freeformAddress;
+
+              option.addEventListener('click', () => {
+                addressInput.value = result.address.freeformAddress;
+
+                addressInput.dataset.lat = result.position.lat;
+                addressInput.dataset.lon = result.position.lon;
+
+                console.log(
+                  'SELECTED ADDRESS:',
+                  result.address.freeformAddress,
+                );
+
+                console.log(
+                  'COORDINATES:',
+                  result.position.lat,
+                  result.position.lon,
+                );
+
+                suggestions.innerHTML = '';
+                suggestions.style.display = 'none';
+              });
+
+              suggestions.appendChild(option);
             });
 
-            suggestions.appendChild(option);
-          });
+            suggestions.style.display = 'block';
+          } catch (err) {
+            console.error('AZURE ERROR:', err);
+          }
+        });
+        document.addEventListener('click', (e) => {
+          const suggestions = document.getElementById('address-suggestions');
 
-          suggestions.style.display = 'block';
-        } catch (err) {
-          console.error('AZURE ERROR:', err);
+          if (!e.target.closest('.address-wrapper')) {
+            suggestions.innerHTML = '';
+            suggestions.style.display = 'none';
+          }
+        });
+
+        const container = document.getElementById('order-summary-items');
+
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        const response = await fetch(
+          `/cart-summary?items=${encodeURIComponent(JSON.stringify(cartItems))}`,
+        );
+
+		summary = await response.json();
+
+		console.log('SUMMARY:', summary);
+
+		updateOrderSummary();
+
+        document.querySelectorAll('.tip-btn').forEach((btn) => {
+          if (btn.textContent.includes('20%')) {
+            btn.classList.add('active');
+          }
+        });
+
+        console.log('SUMMARY:', summary);
+
+        container.innerHTML = '';
+
+        summary.items.forEach((item) => {
+          container.innerHTML += `
+		<div style="
+		  display:flex;
+		  justify-content:space-between;
+		  margin-bottom:4px;
+		">
+		  <span>
+			${item.name}
+			(${item.variationName})
+			x${item.quantity}
+		  </span>
+
+		  <span>
+			$${item.totalPrice.toFixed(2)}
+		  </span>
+		</div>
+	  `;
+        });
+      </script>
+      <!-- Section Toggle Scripts -->
+      <script>
+        function toggleCardInput() {
+          const cashSelected = document.getElementById('cod').checked;
+
+          document.getElementById('payment-form').style.display = cashSelected
+            ? 'none'
+            : 'block';
+
+          document.getElementById('cash-form').style.display = cashSelected
+            ? 'block'
+            : 'none';
         }
-      });
-      document.addEventListener('click', (e) => {
-        const suggestions = document.getElementById('address-suggestions');
 
-        if (!e.target.closest('.address-wrapper')) {
-          suggestions.innerHTML = '';
-          suggestions.style.display = 'none';
-        }
-      });
-    </script>
-    <!-- Section Toggle Scripts -->
-    <script>
-      function toggleCardInput() {
-        const cashSelected = document.getElementById('cod').checked;
-
-        document.getElementById('payment-form').style.display = cashSelected
-          ? 'none'
-          : 'block';
-
-        document.getElementById('cash-form').style.display = cashSelected
-          ? 'block'
-          : 'none';
-      }
-    </script>
+        JSON.parse(localStorage.getItem('cartItems'));
+      </script>
+    </div>
   </div>
 </body>
