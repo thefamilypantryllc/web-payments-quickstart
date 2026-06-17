@@ -14,7 +14,7 @@
     "lint:eslint": "eslint --ignore-pattern .gitignore --cache .",
     "lint:prettier": "prettier --check .",
     "lint:prettier:fix": "prettier --write .",
-    "test": "npm-run-all --serial lint test:*",
+    "test": "npm run lint",
     "test:unit": "nyc ava --timeout=2m"
   },
   "repository": {
