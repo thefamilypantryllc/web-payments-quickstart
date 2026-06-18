@@ -32,7 +32,7 @@ async function adminPage(req, res) {
 </head>
 <body>
   <h1>Family Pantry Admin</h1>
-  <p>Admin dashboard coming soon.</p>
+  <p>Admin dashboard coming soon. WOOOOOOO</p>
 </body>
 </html>
 `,
