@@ -7,48 +7,40 @@ const { router, get, post } = require('microrouter');
 const staticHandler = require('serve-handler');
 // async-retry will retry failed API requests
 const retry = require('async-retry');
- 
+
 // logger gives us insight into what's happening
 const logger = require('./server/logger');
 // schema validates incoming requests
 const { validateCreateCardPayload } = require('./server/schema');
 // square provides the API client and error types
 const { client: square } = require('./server/square');
- 
+
 require('./database/init');
 const saveOrder = require('./database/saveOrder');
- 
+
+const fs = require('fs');
+const path = require('path');
+
 async function adminPage(req, res) {
-  console.log('ADMIN ROUTE HIT');
- 
-  return send(
-    res,
-    200,
-    `
-<!doctype html>
-<html>
-<head>
-  <title>Family Pantry Admin</title>
-</head>
-<body>
-  <h1>Family Pantry Admin</h1>
-  <p>Admin dashboard coming soon. WOOOOOOO</p>
-</body>
-</html>
-`,
+  const html = fs.readFileSync(
+    path.join(__dirname, 'public', 'admin.html'),
+    'utf8'
   );
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+  return send(res, 200, html);
 }
- 
 async function createPayment(req, res) {
   const payload = await json(req);
- 
+
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
       success: false,
       error: 'Your cart is empty. Please add at least one item.',
     });
   }
- 
+
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -58,9 +50,9 @@ async function createPayment(req, res) {
         body: JSON.stringify({ lat: payload.lat, lon: payload.lon }),
       },
     );
- 
+
     const check = await validationResponse.json();
- 
+
     if (!check.allowed) {
       return send(res, 400, {
         success: false,
@@ -68,16 +60,16 @@ async function createPayment(req, res) {
       });
     }
   }
- 
+
   console.log('CARD PAYMENT PAYLOAD:');
   console.dir(payload, { depth: null });
- 
+
   logger.debug(JSON.stringify(payload));
- 
+
   await retry(async (bail, attempt) => {
     try {
       logger.debug('Creating payment', { attempt });
- 
+
       const orderResponse = await square.orders.create({
         idempotencyKey: crypto.randomUUID(),
         order: {
@@ -88,22 +80,22 @@ async function createPayment(req, res) {
           })),
         },
       });
- 
+
       console.log('FULL ORDER RESPONSE');
       console.dir(orderResponse, { depth: null });
- 
+
       const order = orderResponse.result?.order || orderResponse.order;
- 
+
       const subtotal = Number(order.totalMoney.amount) / 100;
       const deliveryFee = subtotal < 40 ? 3.0 : 0;
       const salesTax = subtotal * 0.08225;
       const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
       const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
- 
+
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
       console.log('BEFORE saveOrder');
- 
+
       const orderNumber = saveOrder({
         squareOrderId: order.id,
         customerName: `${payload.firstName} ${payload.lastName}`,
@@ -119,10 +111,10 @@ async function createPayment(req, res) {
         tip: tipAmount,
         total: grandTotal,
       });
- 
+
       console.log('AFTER saveOrder');
       console.log('ORDER NUMBER:', orderNumber);
- 
+
       // Send Power Automate notification
       try {
         await fetch(process.env.POWER_AUTOMATE_URL, {
@@ -151,7 +143,7 @@ async function createPayment(req, res) {
       } catch (err) {
         console.error('Power Automate notification failed:', err);
       }
- 
+
       const payment = {
         idempotencyKey: payload.idempotencyKey,
         locationId: payload.locationId,
@@ -161,22 +153,22 @@ async function createPayment(req, res) {
           currency: 'USD',
         },
       };
- 
+
       console.log('PAYMENT AMOUNT:', BigInt(Math.round(grandTotal * 100)));
- 
+
       if (payload.customerId) {
         payment.customerId = payload.customerId;
       }
- 
+
       if (payload.verificationToken) {
         payment.verificationToken = payload.verificationToken;
       }
- 
+
       const { payment: paymentResponse } =
         await square.payments.create(payment);
- 
+
       logger.info('Payment succeeded!', { paymentResponse });
- 
+
       return send(res, 200, {
         success: true,
         orderNumber,
@@ -208,36 +200,36 @@ async function createPayment(req, res) {
     }
   });
 }
- 
+
 async function storeCard(req, res) {
   const payload = await json(req);
- 
+
   if (!validateCreateCardPayload(payload)) {
     throw createError(400, 'Bad Request');
   }
- 
+
   await retry(async (bail, attempt) => {
     try {
       logger.debug('Storing card', { attempt });
- 
+
       const cardReq = {
         idempotencyKey: payload.idempotencyKey,
         sourceId: payload.sourceId,
         card: { customerId: payload.customerId },
       };
- 
+
       if (payload.verificationToken) {
         cardReq.verificationToken = payload.verificationToken;
       }
- 
+
       const { result, statusCode } = await square.cardsApi.createCard(cardReq);
- 
+
       logger.info('Store Card succeeded!', { result, statusCode });
- 
+
       result.card.expMonth = result.card.expMonth.toString();
       result.card.expYear = result.card.expYear.toString();
       result.card.version = result.card.version.toString();
- 
+
       send(res, statusCode, {
         success: true,
         card: result.card,
@@ -255,17 +247,17 @@ async function storeCard(req, res) {
     }
   });
 }
- 
+
 async function createCashOrder(req, res) {
   const payload = await json(req);
- 
+
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
       success: false,
       error: 'Your cart is empty. Please add at least one item.',
     });
   }
- 
+
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -275,9 +267,9 @@ async function createCashOrder(req, res) {
         body: JSON.stringify({ lat: payload.lat, lon: payload.lon }),
       },
     );
- 
+
     const check = await validationResponse.json();
- 
+
     if (!check.allowed) {
       return send(res, 400, {
         success: false,
@@ -285,14 +277,14 @@ async function createCashOrder(req, res) {
       });
     }
   }
- 
+
   try {
     logger.info('Creating cash order', payload);
- 
+
     console.log('STEP 1');
     console.log('ITEMS RECEIVED:');
     console.dir(payload.items, { depth: null });
- 
+
     const response = await square.orders.create({
       idempotencyKey: payload.idempotencyKey,
       order: {
@@ -303,13 +295,13 @@ async function createCashOrder(req, res) {
         })),
       },
     });
- 
+
     console.log('STEP 2');
     console.log('RESPONSE.ORDER');
     console.dir(response.order, { depth: null });
- 
+
     const order = response.result?.order || response.order;
- 
+
     if (!order) {
       console.error('NO ORDER RETURNED');
       console.dir(response, { depth: null });
@@ -318,24 +310,24 @@ async function createCashOrder(req, res) {
         error: 'Square did not return an order',
       });
     }
- 
+
     const subtotal = Number(order.totalMoney.amount) / 100;
     const deliveryFee = subtotal < 40 ? 3.0 : 0;
     const salesTax = Math.round(subtotal * 0.08225 * 100) / 100;
     const tipAmount =
       Math.round(subtotal * ((payload.tipPercent || 0) / 100) * 100) / 100;
     const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
- 
+
     console.log('SUBTOTAL:', subtotal);
     console.log('DELIVERY:', deliveryFee);
     console.log('TAX:', salesTax);
     console.log('TIP:', tipAmount);
     console.log('GRAND TOTAL:', grandTotal);
- 
+
     console.log('FINAL CASH ORDER:');
     console.dir(order, { depth: null });
     console.log('BEFORE saveOrder');
- 
+
     const orderNumber = saveOrder({
       squareOrderId: order.id,
       customerName: `${payload.firstName} ${payload.lastName}`,
@@ -351,10 +343,10 @@ async function createCashOrder(req, res) {
       tip: tipAmount,
       total: grandTotal,
     });
- 
+
     console.log('AFTER saveOrder');
     console.log('ORDER NUMBER:', orderNumber);
- 
+
     // Send Power Automate notification
     try {
       await fetch(process.env.POWER_AUTOMATE_URL, {
@@ -383,7 +375,7 @@ async function createCashOrder(req, res) {
     } catch (err) {
       console.error('Power Automate notification failed:', err);
     }
- 
+
     return send(res, 200, {
       success: true,
       orderNumber,
@@ -407,7 +399,7 @@ async function createCashOrder(req, res) {
     });
   }
 }
- 
+
 async function getCatalog(req, res) {
   try {
     const response = await square.catalog.list();
@@ -418,12 +410,12 @@ async function getCatalog(req, res) {
     return send(res, 500, { success: false, error: err.message });
   }
 }
- 
+
 async function addressSearch(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const query = url.searchParams.get('q');
- 
+
     const response = await fetch(
       `https://atlas.microsoft.com/search/address/json` +
         `?api-version=1.0` +
@@ -434,7 +426,7 @@ async function addressSearch(req, res) {
         `&lon=-94.4485` +
         `&radius=25000`,
     );
- 
+
     const data = await response.json();
     return send(res, 200, data);
   } catch (err) {
@@ -442,39 +434,39 @@ async function addressSearch(req, res) {
     return send(res, 500, { error: err.message });
   }
 }
- 
+
 async function validateDeliveryAddress(req, res) {
   try {
     const payload = await json(req);
- 
+
     const customerLat = payload.lat;
     const customerLon = payload.lon;
- 
+
     const STORE_LAT = 39.5663;
     const STORE_LON = -94.4485;
- 
+
     const response = await fetch(
       `https://atlas.microsoft.com/route/directions/json` +
         `?api-version=1.0` +
         `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
         `&query=${STORE_LAT},${STORE_LON}:${customerLat},${customerLon}`,
     );
- 
+
     const data = await response.json();
     const meters = data.routes?.[0]?.summary?.lengthInMeters || 0;
     const miles = meters * 0.000621371;
- 
+
     return send(res, 200, { allowed: miles <= 15, miles });
   } catch (err) {
     console.error(err);
     return send(res, 500, { allowed: false, error: err.message });
   }
 }
- 
+
 async function cartSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const items = JSON.parse(decodeURIComponent(url.searchParams.get('items')));
- 
+
   const response = await square.orders.create({
     idempotencyKey: crypto.randomUUID(),
     order: {
@@ -485,17 +477,17 @@ async function cartSummary(req, res) {
       })),
     },
   });
- 
+
   const order = response.result?.order || response.order;
- 
+
   if (!order) {
     return send(res, 500, { error: 'Square did not return an order' });
   }
- 
+
   if (!order.lineItems) {
     return send(res, 500, { error: 'Order returned with no line items' });
   }
- 
+
   return send(res, 200, {
     items: order.lineItems.map((item) => ({
       name: item.name,
@@ -506,17 +498,45 @@ async function cartSummary(req, res) {
     subtotal: Number(order.totalMoney.amount) / 100,
   });
 }
- 
+
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
   await staticHandler(req, res, { public: 'public' });
 }
- 
+async function getAdminOrders(req, res) {
+  try {
+    const db = require('./database/db');
+    const orders = db
+      .prepare('SELECT * FROM orders ORDER BY created_at DESC')
+      .all();
+    return send(res, 200, orders);
+  } catch (err) {
+    console.error('ADMIN ORDERS ERROR:', err);
+    return send(res, 500, { error: err.message });
+  }
+}
+
+async function updateOrderStatus(req, res) {
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const parts = url.pathname.split('/');
+    const id = parts[3];
+    const { status } = await json(req);
+    const db = require('./database/db');
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
+    return send(res, 200, { success: true });
+  } catch (err) {
+    console.error('UPDATE STATUS ERROR:', err);
+    return send(res, 500, { error: err.message });
+  }
+}
 module.exports = router(
   post('/payment', createPayment),
   post('/card', storeCard),
   post('/cash', createCashOrder),
+  get('/admin/orders', getAdminOrders),
   get('/admin', adminPage),
+  post('/admin/orders/:id/status', updateOrderStatus),
   get('/catalog', getCatalog),
   get('/address-search', addressSearch),
   post('/validate-address', validateDeliveryAddress),

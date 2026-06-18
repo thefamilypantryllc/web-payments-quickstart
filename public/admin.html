@@ -1,11 +1,902 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <title>Family Pantry Admin</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background: #d3ffb7;
+        min-height: 100vh;
+      }
+
+      /* ── LOGIN ── */
+      #login-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      #login-screen img {
+        max-width: 320px;
+        width: 90%;
+        margin-bottom: 24px;
+      }
+
+      .login-card {
+        background: white;
+        border-radius: 12px;
+        padding: 36px;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        text-align: center;
+      }
+
+      .login-card h2 {
+        color: #1a304a;
+        margin-bottom: 24px;
+        font-size: 22px;
+      }
+
+      .login-card input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d6dce5;
+        border-radius: 8px;
+        font-size: 15px;
+        margin-bottom: 16px;
+        color: #1a304a;
+      }
+
+      .login-card input:focus {
+        outline: none;
+        border-color: #8cc3ff;
+        box-shadow: 0 0 0 3px rgba(140, 195, 255, 0.3);
+      }
+
+      .login-card button {
+        width: 100%;
+        padding: 13px;
+        background: #1a304a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .login-card button:hover {
+        background: #29476b;
+      }
+
+      #login-error {
+        color: #cc0000;
+        font-size: 13px;
+        margin-top: 10px;
+        display: none;
+      }
+
+      /* ── DASHBOARD ── */
+      #dashboard {
+        display: none;
+      }
+
+      .top-bar {
+        background: #1a304a;
+        color: white;
+        padding: 14px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .top-bar img {
+        height: 48px;
+      }
+
+      .top-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .top-bar span {
+        font-size: 14px;
+        opacity: 0.8;
+      }
+
+      .logout-btn {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.2s;
+      }
+
+      .logout-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .dashboard-body {
+        padding: 28px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      /* ── STATS ── */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #1a304a;
+      }
+
+      .stat-value.green {
+        color: #2e7d32;
+      }
+      .stat-value.orange {
+        color: #ef6c00;
+      }
+
+      /* ── CONTROLS ── */
+      .controls {
+        background: white;
+        border-radius: 10px;
+        padding: 16px 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .controls input {
+        padding: 9px 14px;
+        border: 1px solid #d6dce5;
+        border-radius: 8px;
+        font-size: 14px;
+        flex: 1;
+        min-width: 200px;
+        color: #1a304a;
+      }
+
+      .controls input:focus {
+        outline: none;
+        border-color: #8cc3ff;
+      }
+
+      .controls select {
+        padding: 9px 14px;
+        border: 1px solid #d6dce5;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1a304a;
+        background: white;
+        cursor: pointer;
+      }
+
+      .controls select:focus {
+        outline: none;
+        border-color: #8cc3ff;
+      }
+
+      /* ── TABLE ── */
+      .table-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .table-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .table-header h2 {
+        color: #1a304a;
+        font-size: 18px;
+      }
+
+      #order-count {
+        font-size: 13px;
+        color: #888;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      thead th {
+        background: #f8f9fa;
+        padding: 12px 16px;
+        text-align: left;
+        color: #1a304a;
+        font-weight: bold;
+        border-bottom: 2px solid #e5e5e5;
+        white-space: nowrap;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.15s;
+        cursor: pointer;
+      }
+
+      tbody tr:hover {
+        background: #f5f9ff;
+      }
+
+      tbody td {
+        padding: 12px 16px;
+        color: #333;
+        vertical-align: middle;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .badge-paid {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .badge-cash {
+        background: #fff3e0;
+        color: #ef6c00;
+      }
+      .badge-delivered {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .badge-received {
+        background: #fff3e0;
+        color: #ef6c00;
+      }
+
+      .method-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .method-card {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .method-cash {
+        background: #fff3e0;
+        color: #ef6c00;
+      }
+
+      /* ── MODAL ── */
+      #modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      #modal-overlay.active {
+        display: flex;
+      }
+
+      .modal {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        width: 100%;
+        max-width: 560px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e5e5;
+      }
+
+      .modal-header h2 {
+        color: #1a304a;
+        font-size: 20px;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #888;
+        line-height: 1;
+        padding: 0;
+        width: auto;
+        max-width: none;
+        margin: 0;
+      }
+
+      .close-btn:hover {
+        color: #333;
+      }
+
+      .modal-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 14px;
+      }
+
+      .modal-row:last-child {
+        border-bottom: none;
+      }
+      .modal-label {
+        font-weight: bold;
+        color: #1a304a;
+      }
+
+      .modal-section-title {
+        font-weight: bold;
+        color: #1a304a;
+        margin: 20px 0 10px;
+        font-size: 15px;
+        border-bottom: 2px solid #e5e5e5;
+        padding-bottom: 6px;
+      }
+
+      .modal-total {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1a304a;
+        margin-top: 12px;
+      }
+
+      .status-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #d6dce5;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1a304a;
+        margin-top: 16px;
+        background: white;
+      }
+
+      .update-btn {
+        width: 100%;
+        padding: 12px;
+        background: #1a304a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background 0.2s;
+      }
+
+      .update-btn:hover {
+        background: #29476b;
+      }
+
+      .square-link {
+        display: inline-block;
+        margin-top: 12px;
+        color: #1a304a;
+        font-size: 13px;
+        text-decoration: underline;
+        word-break: break-all;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 48px;
+        color: #888;
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-body {
+          padding: 16px;
+        }
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        table {
+          font-size: 12px;
+        }
+        thead th,
+        tbody td {
+          padding: 8px 10px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h1>Family Pantry Admin</h1>
+    <!-- LOGIN -->
+    <div id="login-screen">
+      <img src="/logo.png" alt="The Family Pantry" />
+      <div class="login-card">
+        <h2>🌿 Admin Login</h2>
+        <input
+          type="password"
+          id="password-input"
+          placeholder="Enter password"
+        />
+        <button onclick="login()">Sign In</button>
+        <div id="login-error">Incorrect password. Please try again.</div>
+      </div>
+    </div>
 
-    <p>Admin dashboard coming soon.</p>
+    <!-- DASHBOARD -->
+    <div id="dashboard">
+      <div class="top-bar">
+        <img src="/logo.png" alt="The Family Pantry" />
+        <div class="top-bar-right">
+          <span id="last-updated"></span>
+          <button class="logout-btn" onclick="logout()">Sign Out</button>
+        </div>
+      </div>
+
+      <div class="dashboard-body">
+        <!-- STATS -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="stat-total-orders">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value green" id="stat-revenue">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Card Payments</div>
+            <div class="stat-value green" id="stat-card">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cash Orders</div>
+            <div class="stat-value orange" id="stat-cash">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pending Delivery</div>
+            <div class="stat-value orange" id="stat-pending">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Delivered</div>
+            <div class="stat-value green" id="stat-delivered">—</div>
+          </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="🔍 Search by name, order #, email, address..."
+            oninput="filterOrders()"
+          />
+          <select id="status-filter" onchange="filterOrders()">
+            <option value="">All Statuses</option>
+            <option value="Paid">Paid</option>
+            <option value="Received">Received</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+          <select id="method-filter" onchange="filterOrders()">
+            <option value="">All Payment Methods</option>
+            <option value="Card">Card</option>
+            <option value="Cash">Cash</option>
+          </select>
+          <select id="sort-filter" onchange="filterOrders()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="total-high">Total: High to Low</option>
+            <option value="total-low">Total: Low to High</option>
+          </select>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-card">
+          <div class="table-header">
+            <h2>Orders</h2>
+            <span id="order-count"></span>
+          </div>
+          <div style="overflow-x: auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Delivery Time</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Subtotal</th>
+                  <th>Tax</th>
+                  <th>Tip</th>
+                  <th>Total</th>
+                  <th>Square Order ID</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDER DETAIL MODAL -->
+    <div id="modal-overlay" onclick="closeModal(event)">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-order-number">Order Details</h2>
+          <button class="close-btn" onclick="closeModalDirect()">✕</button>
+        </div>
+
+        <div class="modal-section-title">Customer Information</div>
+        <div class="modal-row">
+          <span class="modal-label">Name</span><span id="m-name"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Phone</span><span id="m-phone"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Email</span><span id="m-email"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Address</span><span id="m-address"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Delivery Time</span
+          ><span id="m-delivery"></span>
+        </div>
+
+        <div class="modal-section-title">Payment</div>
+        <div class="modal-row">
+          <span class="modal-label">Method</span><span id="m-method"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Subtotal</span><span id="m-subtotal"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Delivery Fee</span
+          ><span id="m-delivery-fee"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Sales Tax</span><span id="m-tax"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-label">Tip</span><span id="m-tip"></span>
+        </div>
+        <div class="modal-row modal-total">
+          <span class="modal-label">Total</span><span id="m-total"></span>
+        </div>
+
+        <div class="modal-section-title">Square</div>
+        <div class="modal-row">
+          <span class="modal-label">Square Order ID</span
+          ><span
+            id="m-square-id"
+            style="font-size: 12px; word-break: break-all"
+          ></span>
+        </div>
+
+        <div class="modal-section-title">Update Status</div>
+        <select class="status-select" id="modal-status-select">
+          <option value="Received">Received</option>
+          <option value="Paid">Paid</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <button class="update-btn" onclick="updateStatus()">
+          Update Status
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const ADMIN_PASSWORD = 'familypantry2025';
+      let allOrders = [];
+      let currentOrderId = null;
+
+      function login() {
+        const pw = document.getElementById('password-input').value;
+        if (pw === ADMIN_PASSWORD) {
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+          loadOrders();
+        } else {
+          document.getElementById('login-error').style.display = 'block';
+        }
+      }
+
+      document
+        .getElementById('password-input')
+        .addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') login();
+        });
+
+      function logout() {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('password-input').value = '';
+      }
+
+      async function loadOrders() {
+        try {
+          const res = await fetch('/admin/orders');
+          allOrders = await res.json();
+          renderStats();
+          filterOrders();
+          document.getElementById('last-updated').textContent =
+            'Updated ' + new Date().toLocaleTimeString();
+        } catch (err) {
+          console.error('Failed to load orders:', err);
+        }
+      }
+
+      function renderStats() {
+        const total = allOrders.length;
+        const revenue = allOrders.reduce((s, o) => s + o.total, 0);
+        const card = allOrders.filter(
+          (o) => o.payment_method === 'Card',
+        ).length;
+        const cash = allOrders.filter(
+          (o) => o.payment_method === 'Cash',
+        ).length;
+        const pending = allOrders.filter(
+          (o) => o.status === 'Received' || o.status === 'Recieved',
+        ).length;
+        const delivered = allOrders.filter(
+          (o) => o.status === 'Delivered',
+        ).length;
+
+        document.getElementById('stat-total-orders').textContent = total;
+        document.getElementById('stat-revenue').textContent =
+          '$' + revenue.toFixed(2);
+        document.getElementById('stat-card').textContent = card;
+        document.getElementById('stat-cash').textContent = cash;
+        document.getElementById('stat-pending').textContent = pending;
+        document.getElementById('stat-delivered').textContent = delivered;
+      }
+
+      function filterOrders() {
+        const search = document
+          .getElementById('search-input')
+          .value.toLowerCase();
+        const status = document.getElementById('status-filter').value;
+        const method = document.getElementById('method-filter').value;
+        const sort = document.getElementById('sort-filter').value;
+
+        let filtered = allOrders.filter((o) => {
+          const matchSearch =
+            !search ||
+            (o.customer_name || '').toLowerCase().includes(search) ||
+            (o.order_number || '').toLowerCase().includes(search) ||
+            (o.email || '').toLowerCase().includes(search) ||
+            (o.address || '').toLowerCase().includes(search) ||
+            (o.phone || '').includes(search);
+
+          const matchStatus =
+            !status ||
+            o.status === status ||
+            (status === 'Received' && o.status === 'Recieved');
+
+          const matchMethod = !method || o.payment_method === method;
+
+          return matchSearch && matchStatus && matchMethod;
+        });
+
+        filtered.sort((a, b) => {
+          if (sort === 'newest')
+            return new Date(b.created_at) - new Date(a.created_at);
+          if (sort === 'oldest')
+            return new Date(a.created_at) - new Date(b.created_at);
+          if (sort === 'total-high') return b.total - a.total;
+          if (sort === 'total-low') return a.total - b.total;
+          return 0;
+        });
+
+        renderTable(filtered);
+        document.getElementById('order-count').textContent =
+          filtered.length + ' of ' + allOrders.length + ' orders';
+      }
+
+      function renderTable(orders) {
+        const tbody = document.getElementById('orders-tbody');
+
+        if (orders.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="12" class="empty-state">No orders found</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = orders
+          .map((o) => {
+            const statusClass =
+              o.status === 'Paid'
+                ? 'badge-paid'
+                : o.status === 'Delivered'
+                  ? 'badge-delivered'
+                  : 'badge-received';
+
+            const methodClass =
+              o.payment_method === 'Card' ? 'method-card' : 'method-cash';
+
+            const deliveryDate = o.delivery_time
+              ? new Date(o.delivery_time).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              : '—';
+
+            const createdDate = o.created_at
+              ? new Date(o.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : '—';
+
+            const displayStatus =
+              o.status === 'Recieved' ? 'Received' : o.status;
+
+            return `<tr onclick="openModal(${o.id})">
+            <td><strong>${o.order_number || '—'}</strong></td>
+            <td>${createdDate}</td>
+            <td>${o.customer_name || '—'}</td>
+            <td>${o.phone || '—'}</td>
+            <td>${deliveryDate}</td>
+            <td><span class="method-badge ${methodClass}">${o.payment_method}</span></td>
+            <td><span class="badge ${statusClass}">${displayStatus}</span></td>
+            <td>$${Number(o.subtotal).toFixed(2)}</td>
+            <td>$${Number(o.sales_tax).toFixed(2)}</td>
+            <td>$${Number(o.tip).toFixed(2)}</td>
+            <td><strong>$${Number(o.total).toFixed(2)}</strong></td>
+            <td style="font-size:11px;color:#888;">${(o.square_order_id || '').substring(0, 16)}...</td>
+          </tr>`;
+          })
+          .join('');
+      }
+
+      function openModal(id) {
+        const o = allOrders.find((x) => x.id === id);
+        if (!o) return;
+
+        currentOrderId = id;
+
+        document.getElementById('modal-order-number').textContent =
+          o.order_number;
+        document.getElementById('m-name').textContent = o.customer_name;
+        document.getElementById('m-phone').textContent = o.phone;
+        document.getElementById('m-email').textContent = o.email;
+        document.getElementById('m-address').textContent = o.address;
+        document.getElementById('m-delivery').textContent = o.delivery_time
+          ? new Date(o.delivery_time).toLocaleString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })
+          : '—';
+        document.getElementById('m-method').textContent = o.payment_method;
+        document.getElementById('m-subtotal').textContent =
+          '$' + Number(o.subtotal).toFixed(2);
+        document.getElementById('m-delivery-fee').textContent =
+          '$' + Number(o.delivery_fee).toFixed(2);
+        document.getElementById('m-tax').textContent =
+          '$' + Number(o.sales_tax).toFixed(2);
+        document.getElementById('m-tip').textContent =
+          '$' + Number(o.tip).toFixed(2);
+        document.getElementById('m-total').textContent =
+          '$' + Number(o.total).toFixed(2);
+        document.getElementById('m-square-id').textContent =
+          o.square_order_id || '—';
+
+        const currentStatus = o.status === 'Recieved' ? 'Received' : o.status;
+        document.getElementById('modal-status-select').value = currentStatus;
+
+        document.getElementById('modal-overlay').classList.add('active');
+      }
+
+      function closeModal(e) {
+        if (e.target === document.getElementById('modal-overlay'))
+          closeModalDirect();
+      }
+
+      function closeModalDirect() {
+        document.getElementById('modal-overlay').classList.remove('active');
+        currentOrderId = null;
+      }
+
+      async function updateStatus() {
+        if (!currentOrderId) return;
+        const newStatus = document.getElementById('modal-status-select').value;
+
+        try {
+          const res = await fetch(
+            '/admin/orders/' + currentOrderId + '/status',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus }),
+            },
+          );
+
+          if (res.ok) {
+            const order = allOrders.find((o) => o.id === currentOrderId);
+            if (order) order.status = newStatus;
+            renderStats();
+            filterOrders();
+            closeModalDirect();
+          } else {
+            alert('Failed to update status');
+          }
+        } catch (err) {
+          console.error('Update failed:', err);
+          alert('Failed to update status');
+        }
+      }
+
+      // Auto-refresh every 60 seconds
+      setInterval(loadOrders, 60000);
+    </script>
   </body>
 </html>

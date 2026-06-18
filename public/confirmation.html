@@ -230,229 +230,245 @@
   </head>
 
   <body>
-  <div style="text-align: center; padding: 20px 0;">
-  <img src="/logo.png" alt="The Family Pantry" style="max-width: 400px; width: 90%;" />
-</div>
-    <div class="confirmation-card">
-      <div class="success-banner">
-        <div class="success-icon">✅</div>
-        <h1>Order Confirmed</h1>
-        <p>Thank you for your order!</p>
-      </div>
+    <body>
+      <div
+        style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 40px 20px;
+        "
+      >
+        <img
+          src="/logo.png"
+          alt="The Family Pantry"
+          style="max-width: 400px; width: 90%; margin-bottom: 20px"
+        />
+        <div class="confirmation-card">
+          <div class="success-banner">
+            <div class="success-icon">✅</div>
+            <h1>Order Confirmed</h1>
+            <p>Thank you for your order!</p>
+          </div>
 
-      <div class="row">
-        <span class="label">Order ID:</span>
-        <span id="orderNumber"></span>
-      </div>
+          <div class="row">
+            <span class="label">Order ID:</span>
+            <span id="orderNumber"></span>
+          </div>
 
-      <div class="row">
-        <span class="label">Customer:</span>
-        <span id="customer"></span>
-      </div>
+          <div class="row">
+            <span class="label">Customer:</span>
+            <span id="customer"></span>
+          </div>
 
-      <div class="row">
-        <span class="label">Phone:</span>
-        <span id="phone"></span>
-      </div>
+          <div class="row">
+            <span class="label">Phone:</span>
+            <span id="phone"></span>
+          </div>
 
-      <div class="row">
-        <span class="label">Email:</span>
-        <span id="email"></span>
-      </div>
+          <div class="row">
+            <span class="label">Email:</span>
+            <span id="email"></span>
+          </div>
 
-      <div class="row">
-        <span class="label">Delivery Address:</span>
-        <span id="address"></span>
-      </div>
+          <div class="row">
+            <span class="label">Delivery Address:</span>
+            <span id="address"></span>
+          </div>
 
-      <div class="delivery-box">
-        🚚 Expected Delivery:
-        <strong id="deliveryTime"></strong>
-      </div>
+          <div class="delivery-box">
+            🚚 Expected Delivery:
+            <strong id="deliveryTime"></strong>
+          </div>
 
-      <div class="row">
-        <span class="label">Payment Method:</span>
-        <span id="method"></span>
-      </div>
+          <div class="row">
+            <span class="label">Payment Method:</span>
+            <span id="method"></span>
+          </div>
 
-      <div class="row">
-        <span class="label">Status:</span>
-        <span id="status"></span>
-      </div>
+          <div class="row">
+            <span class="label">Status:</span>
+            <span id="status"></span>
+          </div>
 
-      <hr />
+          <hr />
 
-      <h2>Order Summary</h2>
+          <h2>Order Summary</h2>
 
-      <div class="section">
-        <h3>Order Items</h3>
+          <div class="section">
+            <h3>Order Items</h3>
 
-        <div id="order-items"></div>
-      </div>
+            <div id="order-items"></div>
+          </div>
 
-      <hr class="summary-divider" />
+          <hr class="summary-divider" />
 
-      <div class="total-row">
-        <span>Subtotal</span>
-        <span id="subtotal"></span>
-      </div>
+          <div class="total-row">
+            <span>Subtotal</span>
+            <span id="subtotal"></span>
+          </div>
 
-      <div class="total-row">
-        <span>Delivery Fee</span>
-        <span id="deliveryFee"></span>
-      </div>
+          <div class="total-row">
+            <span>Delivery Fee</span>
+            <span id="deliveryFee"></span>
+          </div>
 
-      <div class="total-row">
-        <span>Sales Tax</span>
-        <span id="salesTax"></span>
-      </div>
+          <div class="total-row">
+            <span>Sales Tax</span>
+            <span id="salesTax"></span>
+          </div>
 
-      <div class="total-row">
-        <span>Tip</span>
-        <span id="tip"></span>
-      </div>
+          <div class="total-row">
+            <span>Tip</span>
+            <span id="tip"></span>
+          </div>
 
-      <div class="total-row total">
-        <span>Total</span>
-        <span id="grandTotal"></span>
-      </div>
+          <div class="total-row total">
+            <span>Total</span>
+            <span id="grandTotal"></span>
+          </div>
 
-      <div class="Delivery-info">
-        <h3>Delivery Information</h3>
-        <p>
-          Your order will be delivered to the address listed above during your
-          selected delivery time.
-        </p>
-        <p>Questions? Contact: info@thefamilypantry.org</p>
-        <p>Or Call: (816)207-7623</p>
-      </div>
-      <div class="action-buttons">
-        <a id="receiptLink" class="action-btn receipt-link" target="_blank">
-          View Square Receipt
-        </a>
+          <div class="Delivery-info">
+            <h3>Delivery Information</h3>
+            <p>
+              Your order will be delivered to the address listed above during
+              your selected delivery time.
+            </p>
+            <p>Questions? Contact: info@thefamilypantry.org</p>
+            <p>Or Call: (816)207-7623</p>
+          </div>
+          <div class="action-buttons">
+            <a id="receiptLink" class="action-btn receipt-link" target="_blank">
+              View Square Receipt
+            </a>
 
-        <button
-          class="action-btn menu-button"
-          onclick="window.location.href = '/menu.html'"
-        >
-          Return to Menu
-        </button>
+            <button
+              class="action-btn menu-button"
+              onclick="window.location.href = '/menu.html'"
+            >
+              Return to Menu
+            </button>
 
-        <button class="action-btn print-button" onclick="window.print()">
-          Print Order
-        </button>
-      </div>
-    </div>
-  </body>
-  <script>
-    const params = new URLSearchParams(window.location.search);
+            <button class="action-btn print-button" onclick="window.print()">
+              Print Order
+            </button>
+          </div>
+        </div>
+        <script>
+          const params = new URLSearchParams(window.location.search);
 
-    document.getElementById('orderNumber').textContent =
-      params.get('orderNumber');
+          document.getElementById('orderNumber').textContent =
+            params.get('orderNumber');
 
-    document.getElementById('customer').textContent =
-      `${params.get('firstName')} ${params.get('lastName')}`;
+          document.getElementById('customer').textContent =
+            `${params.get('firstName')} ${params.get('lastName')}`;
 
-    document.getElementById('phone').textContent = params.get('phone');
+          document.getElementById('phone').textContent = params.get('phone');
 
-    document.getElementById('email').textContent = params.get('email');
+          document.getElementById('email').textContent = params.get('email');
 
-    document.getElementById('address').textContent = params.get('address');
+          document.getElementById('address').textContent =
+            params.get('address');
 
-    document.getElementById('method').textContent = params.get('method');
+          document.getElementById('method').textContent = params.get('method');
 
-    const menuButton = document.getElementById('menuButton');
+          const menuButton = document.getElementById('menuButton');
 
-    if (menuButton) {
-      menuButton.style.display = 'block';
-    }
+          if (menuButton) {
+            menuButton.style.display = 'block';
+          }
 
-    function getOrdinal(n) {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    }
+          function getOrdinal(n) {
+            const s = ['th', 'st', 'nd', 'rd'];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+          }
 
-    const deliveryTime = params.get('deliveryTime');
+          const deliveryTime = params.get('deliveryTime');
 
-    if (deliveryTime) {
-      const date = new Date(deliveryTime);
+          if (deliveryTime) {
+            const date = new Date(deliveryTime);
 
-      const weekday = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-      });
+            const weekday = date.toLocaleDateString('en-US', {
+              weekday: 'long',
+            });
 
-      const month = date.toLocaleDateString('en-US', {
-        month: 'long',
-      });
+            const month = date.toLocaleDateString('en-US', {
+              month: 'long',
+            });
 
-      const day = getOrdinal(date.getDate());
+            const day = getOrdinal(date.getDate());
 
-      const year = date.getFullYear();
+            const year = date.getFullYear();
 
-      const time = date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      });
+            const time = date.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+            });
 
-      document.getElementById('deliveryTime').textContent =
-        `${weekday}, ${month} ${day}, ${year} at ${time}`;
-    }
-    const subtotal = Number(params.get('subtotal') || 0);
+            document.getElementById('deliveryTime').textContent =
+              `${weekday}, ${month} ${day}, ${year} at ${time}`;
+          }
+          const subtotal = Number(params.get('subtotal') || 0);
 
-    const deliveryFee = Number(params.get('deliveryFee') || 0);
+          const deliveryFee = Number(params.get('deliveryFee') || 0);
 
-    const salesTax = Number(params.get('salesTax') || 0);
+          const salesTax = Number(params.get('salesTax') || 0);
 
-    const tip = Number(params.get('tip') || 0);
+          const tip = Number(params.get('tip') || 0);
 
-    const grandTotal = Number(params.get('total') || 0);
+          const grandTotal = Number(params.get('total') || 0);
 
-    const items = params.get('items') || '';
+          const items = params.get('items') || '';
 
-    document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+          document.getElementById('subtotal').textContent =
+            '$' + subtotal.toFixed(2);
 
-    document.getElementById('deliveryFee').textContent =
-      '$' + deliveryFee.toFixed(2);
+          document.getElementById('deliveryFee').textContent =
+            '$' + deliveryFee.toFixed(2);
 
-    document.getElementById('salesTax').textContent = '$' + salesTax.toFixed(2);
+          document.getElementById('salesTax').textContent =
+            '$' + salesTax.toFixed(2);
 
-    document.getElementById('tip').textContent = '$' + tip.toFixed(2);
+          document.getElementById('tip').textContent = '$' + tip.toFixed(2);
 
-    document.getElementById('grandTotal').textContent =
-      '$' + grandTotal.toFixed(2);
+          document.getElementById('grandTotal').textContent =
+            '$' + grandTotal.toFixed(2);
 
-    document.getElementById('order-items').innerHTML = items
-      .split(', ')
-      .map(
-        (item) => `
+          document.getElementById('order-items').innerHTML = items
+            .split(', ')
+            .map(
+              (item) => `
            <div class="item-row">
              <span>${item}</span>
            </div>
          `,
-      )
-      .join('');
+            )
+            .join('');
 
-    const method = params.get('method') || '';
+          const method = params.get('method') || '';
 
-    const statusEl = document.getElementById('status');
+          const statusEl = document.getElementById('status');
 
-    if (method.toLowerCase() === 'card') {
-      statusEl.textContent = 'PAID';
-      statusEl.className = 'status-paid';
-    }
+          if (method.toLowerCase() === 'card') {
+            statusEl.textContent = 'PAID';
+            statusEl.className = 'status-paid';
+          }
 
-    if (method.toLowerCase() === 'cash') {
-      statusEl.textContent = 'PAY AT DELIVERY';
-      statusEl.className = 'status-cash';
-    }
-    const receiptUrl = params.get('receiptUrl');
-    const receiptLink = document.getElementById('receiptLink');
+          if (method.toLowerCase() === 'cash') {
+            statusEl.textContent = 'PAY AT DELIVERY';
+            statusEl.className = 'status-cash';
+          }
+          const receiptUrl = params.get('receiptUrl');
+          const receiptLink = document.getElementById('receiptLink');
 
-    if (receiptUrl) {
-      receiptLink.href = receiptUrl;
-    } else {
-      receiptLink.style.display = 'none';
-    }
-  </script>
+          if (receiptUrl) {
+            receiptLink.href = receiptUrl;
+          } else {
+            receiptLink.style.display = 'none';
+          }
+        </script>
+      </div>
+    </body>
+  </body>
 </html>
