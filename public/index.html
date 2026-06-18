@@ -458,8 +458,7 @@
             const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
 
             window.location.href =
-              `/confirmation?` +
-              `orderId=${encodeURIComponent(paymentResults.orderNumber)}` +
+              `/confirmation?orderNumber=${encodeURIComponent(paymentResults.orderNumber)}` +
               `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
               `&firstName=${encodeURIComponent(firstName)}` +
               `&lastName=${encodeURIComponent(lastName)}` +
@@ -648,7 +647,7 @@
             console.log('grandTotal', grandTotal);
 
             window.location.href =
-              `/confirmation?orderId=${result.orderNumber}` +
+              `/confirmation?orderNumber=${encodeURIComponent(result.orderNumber)}` +
               `&firstName=${encodeURIComponent(firstName)}` +
               `&lastName=${encodeURIComponent(lastName)}` +
               `&phone=${encodeURIComponent(phone)}` +
