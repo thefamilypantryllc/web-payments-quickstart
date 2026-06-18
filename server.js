@@ -24,7 +24,7 @@ const path = require('path');
 async function adminPage(req, res) {
   const html = fs.readFileSync(
     path.join(__dirname, 'public', 'admin.html'),
-    'utf8'
+    'utf8',
   );
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
