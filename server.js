@@ -1,3 +1,4 @@
+require('dotenv').config();
 // micro provides http helpers
 const { createError, json, send } = require('micro');
 // microrouter provides http server routing
@@ -17,6 +18,26 @@ const { client: square } = require('./server/square');
 require('./database/init');
 const saveOrder = require('./database/saveOrder');
 
+async function adminPage(req, res) {
+  console.log('ADMIN ROUTE HIT');
+
+  return send(
+    res,
+    200,
+    `
+<!doctype html>
+<html>
+<head>
+  <title>Family Pantry Admin</title>
+</head>
+<body>
+  <h1>Family Pantry Admin</h1>
+  <p>Admin dashboard coming soon.</p>
+</body>
+</html>
+`,
+  );
+}
 async function createPayment(req, res) {
   const payload = await json(req);
 
@@ -474,7 +495,19 @@ async function cartSummary(req, res) {
     },
   });
 
-  const order = response.order;
+  const order = response.result?.order || response.order;
+
+  if (!order) {
+    return send(res, 500, {
+      error: 'Square did not return an order',
+    });
+  }
+
+  if (!order.lineItems) {
+    return send(res, 500, {
+      error: 'Order returned with no line items',
+    });
+  }
 
   return send(res, 200, {
     items: order.lineItems.map((item) => ({
@@ -483,7 +516,6 @@ async function cartSummary(req, res) {
       quantity: item.quantity,
       totalPrice: Number(item.totalMoney.amount) / 100,
     })),
-
     subtotal: Number(order.totalMoney.amount) / 100,
   });
 }
@@ -498,6 +530,7 @@ module.exports = router(
   post('/payment', createPayment),
   post('/card', storeCard),
   post('/cash', createCashOrder),
+  get('/admin', adminPage),
 
   get('/catalog', getCatalog),
   get('/address-search', addressSearch),
