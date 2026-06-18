@@ -117,8 +117,6 @@ async function createPayment(req, res) {
 
       console.log('ORDER NUMBER:', orderNumber);
 
-      console.log('ORDER NUMBER:', orderNumber);
-
       const payment = {
         idempotencyKey: payload.idempotencyKey,
         locationId: payload.locationId,
@@ -319,11 +317,10 @@ async function createCashOrder(req, res) {
     console.log('TAX:', salesTax);
     console.log('TIP:', tipAmount);
     console.log('GRAND TOTAL:', grandTotal);
+	
+	console.log('FINAL CASH ORDER:');
+	console.dir(order, { depth: null });
 
-    console.log('FINAL CASH ORDER:');
-    console.dir(order, { depth: null });
-
-    console.log('ORDER NUMBER:', orderNumber);
     const orderNumber = saveOrder({
       squareOrderId: order.id,
       customerName: `${payload.firstName} ${payload.lastName}`,
