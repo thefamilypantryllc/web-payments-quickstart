@@ -141,6 +141,35 @@ async function createPayment(req, res) {
       console.log('AFTER saveOrder');
       console.log('ORDER NUMBER:', orderNumber);
 
+      // Send Power Automate notification
+      try {
+        await fetch(process.env.POWER_AUTOMATE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNumber: String(orderNumber),
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            email: payload.email,
+            phone: payload.phone,
+            address: payload.address,
+            deliveryTime: payload.deliveryTime,
+            paymentMethod: 'Card', // change to 'Cash' in the createCashOrder version
+            subtotal,
+            deliveryFee,
+            salesTax,
+            tip: tipAmount,
+            grandTotal,
+            items: (order.lineItems || []).map(
+              (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
+            ),
+          }),
+        });
+        console.log('Power Automate notification sent');
+      } catch (err) {
+        console.error('Power Automate notification failed:', err);
+      }
+
       const payment = {
         idempotencyKey: payload.idempotencyKey,
         locationId: payload.locationId,
@@ -366,6 +395,35 @@ async function createCashOrder(req, res) {
 
     console.log('AFTER saveOrder');
     console.log('ORDER NUMBER:', orderNumber);
+
+    // Send Power Automate notification
+    try {
+      await fetch(process.env.POWER_AUTOMATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumber: String(orderNumber),
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          phone: payload.phone,
+          address: payload.address,
+          deliveryTime: payload.deliveryTime,
+          paymentMethod: 'Card', // change to 'Cash' in the createCashOrder version
+          subtotal,
+          deliveryFee,
+          salesTax,
+          tip: tipAmount,
+          grandTotal,
+          items: (order.lineItems || []).map(
+            (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
+          ),
+        }),
+      });
+      console.log('Power Automate notification sent');
+    } catch (err) {
+      console.error('Power Automate notification failed:', err);
+    }
 
     return send(res, 200, {
       success: true,
