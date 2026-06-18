@@ -305,8 +305,6 @@
 
         .right-column {
           width: 100%;
-          display: flex;
-          justify-content: center;
         }
       </style>
 
@@ -506,7 +504,6 @@
             deliveryTime,
             items: cartItems,
             tipPercent: selectedTip,
-            squareOrderId: order.id,
           });
 
           if (cartItems.length === 0) {
@@ -612,7 +609,6 @@
                 deliveryTime,
                 items: cartItems,
                 tipPercent: selectedTip,
-                squareOrderId: order.id,
               }),
             });
 
