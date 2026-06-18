@@ -317,9 +317,9 @@ async function createCashOrder(req, res) {
     console.log('TAX:', salesTax);
     console.log('TIP:', tipAmount);
     console.log('GRAND TOTAL:', grandTotal);
-	
-	console.log('FINAL CASH ORDER:');
-	console.dir(order, { depth: null });
+
+    console.log('FINAL CASH ORDER:');
+    console.dir(order, { depth: null });
 
     const orderNumber = saveOrder({
       squareOrderId: order.id,
