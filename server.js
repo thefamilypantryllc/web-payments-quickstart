@@ -150,8 +150,8 @@ async function createPayment(req, res) {
 
       return send(res, 200, {
         success: true,
-		
-		orderNumber,
+
+        orderNumber,
 
         payment: {
           id: paymentResponse.id,
