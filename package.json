@@ -15,7 +15,8 @@
     "lint:prettier": "prettier --check .",
     "lint:prettier:fix": "prettier --write .",
     "test": "npm run lint",
-    "test:unit": "nyc ava --timeout=2m"
+    "test:unit": "nyc ava --timeout=2m",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
