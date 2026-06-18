@@ -195,7 +195,7 @@
       .total {
         margin-top: 10px;
       }
-      #orderId {
+      #orderNumber {
         word-break: break-all;
       }
       .action-btn:active {
@@ -239,7 +239,7 @@
 
       <div class="row">
         <span class="label">Order ID:</span>
-        <span id="orderId"></span>
+        <span id="orderNumber"></span>
       </div>
 
       <div class="row">
@@ -344,7 +344,8 @@
   <script>
     const params = new URLSearchParams(window.location.search);
 
-    document.getElementById('orderId').textContent = params.get('orderId');
+    document.getElementById('orderNumber').textContent =
+      params.get('orderNumber');
 
     document.getElementById('customer').textContent =
       `${params.get('firstName')} ${params.get('lastName')}`;

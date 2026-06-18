@@ -461,7 +461,7 @@
 
             window.location.href =
               `/confirmation?` +
-              `orderId=${encodeURIComponent(paymentResults.orderId)}` +
+              `orderId=${encodeURIComponent(paymentResults.orderNumber)}` +
               `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
               `&firstName=${encodeURIComponent(firstName)}` +
               `&lastName=${encodeURIComponent(lastName)}` +
@@ -506,6 +506,7 @@
             deliveryTime,
             items: cartItems,
             tipPercent: selectedTip,
+            squareOrderId: order.id,
           });
 
           if (cartItems.length === 0) {
@@ -611,6 +612,7 @@
                 deliveryTime,
                 items: cartItems,
                 tipPercent: selectedTip,
+                squareOrderId: order.id,
               }),
             });
 
@@ -650,7 +652,7 @@
             console.log('grandTotal', grandTotal);
 
             window.location.href =
-              `/confirmation?orderId=${result.orderId}` +
+              `/confirmation?orderId=${result.orderNumber}` +
               `&firstName=${encodeURIComponent(firstName)}` +
               `&lastName=${encodeURIComponent(lastName)}` +
               `&phone=${encodeURIComponent(phone)}` +

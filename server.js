@@ -102,7 +102,6 @@ async function createPayment(req, res) {
       console.log('BEFORE saveOrder');
 
       const orderNumber = saveOrder({
-        squareOrderId: order.id,
         customerName: `${payload.firstName} ${payload.lastName}`,
         phone: payload.phone,
         email: payload.email,
@@ -348,9 +347,6 @@ async function createCashOrder(req, res) {
 
     return send(res, 200, {
       success: true,
-
-      orderId: order.id,
-
       status: 'OPEN',
 
       subtotal,
