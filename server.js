@@ -98,7 +98,7 @@ async function createPayment(req, res) {
 
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
-	  console.log('BEFORE saveOrder');
+      console.log('BEFORE saveOrder');
 
       const orderNumber = saveOrder({
         squareOrderId: order.id,
@@ -115,8 +115,8 @@ async function createPayment(req, res) {
         tip: tipAmount,
         total: grandTotal,
       });
-	  
-	  console.log('AFTER saveOrder');
+
+      console.log('AFTER saveOrder');
       console.log('ORDER NUMBER:', orderNumber);
 
       const payment = {
@@ -322,7 +322,7 @@ async function createCashOrder(req, res) {
 
     console.log('FINAL CASH ORDER:');
     console.dir(order, { depth: null });
-	console.log('BEFORE saveOrder');
+    console.log('BEFORE saveOrder');
 
     const orderNumber = saveOrder({
       squareOrderId: order.id,
@@ -339,8 +339,8 @@ async function createCashOrder(req, res) {
       tip: tipAmount,
       total: grandTotal,
     });
-	
-	console.log('AFTER saveOrder');
+
+    console.log('AFTER saveOrder');
     console.log('ORDER NUMBER:', orderNumber);
 
     return send(res, 200, {
