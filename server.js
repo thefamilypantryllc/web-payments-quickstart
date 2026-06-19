@@ -60,6 +60,23 @@ function validateDeliveryTime(deliveryTime) {
   return null;
 }
 
+function getSquareStoreUrl() {
+  const fallbackUrl = 'https://checkout.thefamilypantry.org/s/orders';
+  const configuredUrl = process.env.SQUARE_STORE_URL || fallbackUrl;
+
+  try {
+    const storeUrl = new URL(configuredUrl);
+
+    if (storeUrl.hostname === 'www.checkout.thefamilypantry.org') {
+      storeUrl.hostname = 'checkout.thefamilypantry.org';
+    }
+
+    return storeUrl.toString();
+  } catch {
+    return fallbackUrl;
+  }
+}
+
 async function getDeliveryAreaResult(customerLat, customerLon) {
   const storeLat = 39.5663;
   const storeLon = -94.4485;
@@ -643,9 +660,7 @@ async function getSquareConfig(req, res) {
         ? 'sandbox'
         : 'production',
     customerAccountsEnabled: isCustomerAccountsEnabled(),
-    storeUrl:
-      process.env.SQUARE_STORE_URL ||
-      'https://www.checkout.thefamilypantry.org/s/orders',
+    storeUrl: getSquareStoreUrl(),
   });
 }
 
@@ -843,11 +858,7 @@ async function squareWebhook(req, res) {
 
 async function redirectToStore(req, res) {
   res.statusCode = 302;
-  res.setHeader(
-    'Location',
-    process.env.SQUARE_STORE_URL ||
-      'https://www.checkout.thefamilypantry.org/s/orders',
-  );
+  res.setHeader('Location', getSquareStoreUrl());
   res.end();
 }
 
