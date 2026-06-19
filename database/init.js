@@ -1,5 +1,13 @@
 const db = require('./db');
 
+function addColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+
+  if (!columns.some((existing) => existing.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,6 +62,19 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_customer_sessions_token
     ON customer_sessions(token_hash);
+`);
+
+addColumn('orders', 'customer_id', 'INTEGER');
+addColumn('customers', 'first_name', 'TEXT');
+addColumn('customers', 'last_name', 'TEXT');
+addColumn('customers', 'phone', 'TEXT');
+addColumn('customers', 'default_address', 'TEXT');
+addColumn('customers', 'marketing_consent', 'INTEGER NOT NULL DEFAULT 0');
+addColumn('customers', 'marketing_consent_at', 'DATETIME');
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email);
 `);
 
 console.log('Orders table ready');

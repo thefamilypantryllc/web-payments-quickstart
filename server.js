@@ -102,6 +102,77 @@ async function getDeliveryAreaResult(customerLat, customerLon) {
   return { allowed: miles <= 15, miles };
 }
 
+function serializeCustomer(customer) {
+  return {
+    email: customer.email,
+    firstName: customer.first_name || '',
+    lastName: customer.last_name || '',
+    phone: customer.phone || '',
+    defaultAddress: customer.default_address || '',
+    marketingConsent: Boolean(customer.marketing_consent),
+    marketingConsentAt: customer.marketing_consent_at || null,
+  };
+}
+
+function cleanProfileValue(value, maxLength) {
+  return String(value || '')
+    .trim()
+    .slice(0, maxLength);
+}
+
+async function updateCustomerProfile(customer, payload, updateConsent = false) {
+  const db = require('./database/db');
+  const firstName = cleanProfileValue(payload.firstName, 100);
+  const lastName = cleanProfileValue(payload.lastName, 100);
+  const phone = cleanProfileValue(payload.phone, 30);
+  const defaultAddress = cleanProfileValue(payload.defaultAddress, 500);
+  const marketingConsent = updateConsent
+    ? payload.marketingConsent === true
+    : Boolean(customer.marketing_consent);
+
+  db.prepare(
+    `
+      UPDATE customers
+      SET first_name = ?,
+          last_name = ?,
+          phone = ?,
+          default_address = ?,
+          marketing_consent = ?,
+          marketing_consent_at = CASE
+            WHEN ? = 1 AND marketing_consent = 0 THEN CURRENT_TIMESTAMP
+            WHEN ? = 0 THEN NULL
+            ELSE marketing_consent_at
+          END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+  ).run(
+    firstName,
+    lastName,
+    phone,
+    defaultAddress,
+    marketingConsent ? 1 : 0,
+    marketingConsent ? 1 : 0,
+    marketingConsent ? 1 : 0,
+    customer.id,
+  );
+
+  if (customer.square_customer_id) {
+    try {
+      await square.customers.update({
+        customerId: customer.square_customer_id,
+        givenName: firstName || null,
+        familyName: lastName || null,
+        phoneNumber: phone || null,
+      });
+    } catch (err) {
+      console.error('SQUARE CUSTOMER PROFILE UPDATE ERROR:', err);
+    }
+  }
+
+  return db.prepare('SELECT * FROM customers WHERE id = ?').get(customer.id);
+}
+
 async function createPayment(req, res) {
   const payload = await json(req);
   const customerSession = getSession(req);
@@ -212,6 +283,7 @@ async function createPayment(req, res) {
 
       const orderNumber = saveOrder({
         squareOrderId: order.id,
+        customerId: customerSession?.id,
         customerName: `${payload.firstName} ${payload.lastName}`,
         phone: payload.phone,
         email: payload.email,
@@ -290,6 +362,19 @@ async function createPayment(req, res) {
 
       logger.info('Payment succeeded!', { paymentResponse });
 
+      if (customerSession) {
+        try {
+          await updateCustomerProfile(customerSession, {
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            phone: payload.phone,
+            defaultAddress: payload.address,
+          });
+        } catch (err) {
+          console.error('REMEMBER CUSTOMER PROFILE ERROR:', err);
+        }
+      }
+
       return send(res, 200, {
         success: true,
         orderNumber,
@@ -365,6 +450,7 @@ async function storeCard(req, res) {
 
 async function createCashOrder(req, res) {
   const payload = await json(req);
+  const customerSession = getSession(req);
 
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
@@ -453,6 +539,7 @@ async function createCashOrder(req, res) {
 
     const orderNumber = saveOrder({
       squareOrderId: order.id,
+      customerId: customerSession?.id,
       customerName: `${payload.firstName} ${payload.lastName}`,
       phone: payload.phone,
       email: payload.email,
@@ -469,6 +556,19 @@ async function createCashOrder(req, res) {
 
     console.log('AFTER saveOrder');
     console.log('ORDER NUMBER:', orderNumber);
+
+    if (customerSession) {
+      try {
+        await updateCustomerProfile(customerSession, {
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          phone: payload.phone,
+          defaultAddress: payload.address,
+        });
+      } catch (err) {
+        console.error('REMEMBER CUSTOMER PROFILE ERROR:', err);
+      }
+    }
 
     // Send Power Automate notification
     try {
@@ -743,6 +843,14 @@ async function syncSquareOnlineOrder(order) {
   }
 
   const recipient = getOrderRecipient(order);
+  const recipientEmail = String(recipient.emailAddress || '')
+    .trim()
+    .toLowerCase();
+  const localCustomer = recipientEmail
+    ? db
+        .prepare('SELECT id FROM customers WHERE LOWER(email) = ?')
+        .get(recipientEmail)
+    : null;
   const customerName =
     recipient.displayName ||
     order.customerId ||
@@ -762,9 +870,10 @@ async function syncSquareOnlineOrder(order) {
   const paymentMethod = order.tenders?.[0]?.type === 'CASH' ? 'Cash' : 'Card';
   const orderNumber = saveOrder({
     squareOrderId: order.id,
+    customerId: localCustomer?.id,
     customerName,
     phone: recipient.phoneNumber || '',
-    email: recipient.emailAddress || '',
+    email: recipientEmail,
     address: formatSquareAddress(recipient.address),
     deliveryTime: getOrderDeliveryTime(order),
     paymentMethod,
@@ -941,10 +1050,72 @@ async function getCustomerSession(req, res) {
   return send(res, 200, {
     enabled: true,
     loggedIn: true,
-    customer: {
-      email: customer.email,
-    },
+    customer: serializeCustomer(customer),
   });
+}
+
+async function saveCustomerProfile(req, res) {
+  try {
+    const customer = requireSession(req);
+    const payload = await json(req);
+    const updatedCustomer = await updateCustomerProfile(
+      customer,
+      payload,
+      true,
+    );
+
+    return send(res, 200, {
+      success: true,
+      customer: serializeCustomer(updatedCustomer),
+    });
+  } catch (err) {
+    console.error('SAVE CUSTOMER PROFILE ERROR:', err);
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to save your profile.',
+    });
+  }
+}
+
+async function listCustomerOrders(req, res) {
+  try {
+    const customer = requireSession(req);
+    const db = require('./database/db');
+    const orders = db
+      .prepare(
+        `
+          SELECT
+            order_number,
+            delivery_time,
+            payment_method,
+            status,
+            total,
+            created_at
+          FROM orders
+          WHERE customer_id = ? OR LOWER(email) = LOWER(?)
+          ORDER BY created_at DESC
+          LIMIT 100
+        `,
+      )
+      .all(customer.id, customer.email);
+
+    return send(res, 200, {
+      success: true,
+      orders: orders.map((order) => ({
+        orderNumber: order.order_number,
+        deliveryTime: order.delivery_time,
+        paymentMethod: order.payment_method,
+        status: order.status === 'Recieved' ? 'Received' : order.status,
+        total: Number(order.total || 0),
+        createdAt: order.created_at,
+      })),
+    });
+  } catch (err) {
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to load order history.',
+    });
+  }
 }
 
 async function logoutCustomer(req, res) {
@@ -1138,7 +1309,9 @@ module.exports = router(
   post('/auth/verify-code', verifyCustomerCode),
   post('/auth/logout', logoutCustomer),
   get('/account/session', getCustomerSession),
+  get('/account/orders', listCustomerOrders),
   get('/account/cards', listCustomerCards),
+  post('/account/profile', saveCustomerProfile),
   get('/square-config', getSquareConfig),
   get('/store', redirectToStore),
   post('/account/cards/save', storeCard),

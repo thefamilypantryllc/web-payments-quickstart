@@ -5,6 +5,7 @@ function saveOrder(orderData) {
   const insert = db.prepare(`
     INSERT INTO orders (
       square_order_id,
+      customer_id,
       customer_name,
       phone,
       email,
@@ -19,12 +20,13 @@ function saveOrder(orderData) {
       total
     )
     VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
   const result = insert.run(
     orderData.squareOrderId,
+    orderData.customerId || null,
     orderData.customerName,
     orderData.phone,
     orderData.email,

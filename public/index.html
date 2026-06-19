@@ -1060,8 +1060,20 @@
 
           customerAccount = session.customer;
 
+          const firstNameInput = document.getElementById('customer-first-name');
+          const lastNameInput = document.getElementById('customer-last-name');
+          const phoneInput = document.getElementById('customer-phone');
           const emailInput = document.getElementById('customer-email');
+          const addressInput = document.getElementById('customer-address');
+
+          if (!firstNameInput.value)
+            firstNameInput.value = customerAccount.firstName || '';
+          if (!lastNameInput.value)
+            lastNameInput.value = customerAccount.lastName || '';
+          if (!phoneInput.value) phoneInput.value = customerAccount.phone || '';
           if (!emailInput.value) emailInput.value = customerAccount.email;
+          if (!addressInput.value)
+            addressInput.value = customerAccount.defaultAddress || '';
 
           const response = await fetch('/account/cards');
           const result = await response.json();

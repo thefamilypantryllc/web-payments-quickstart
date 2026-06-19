@@ -89,6 +89,48 @@
         font-size: 14px;
         margin: 0 0 16px;
       }
+      .form-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+      .field.full {
+        grid-column: 1 / -1;
+      }
+      label {
+        font-size: 13px;
+        font-weight: 750;
+      }
+      input[type='text'],
+      input[type='tel'] {
+        background: #fbfdfb;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        font: inherit;
+        min-height: 44px;
+        padding: 10px 11px;
+        width: 100%;
+      }
+      .consent {
+        align-items: flex-start;
+        color: var(--muted);
+        display: flex;
+        font-size: 13px;
+        gap: 9px;
+        line-height: 1.45;
+      }
+      #profile-message {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 10px 0 0;
+      }
+      #save-profile {
+        margin-top: 16px;
+      }
       #cards {
         display: grid;
         gap: 10px;
@@ -125,6 +167,36 @@
         color: var(--muted);
         padding: 16px 0;
       }
+      #orders {
+        display: grid;
+        gap: 10px;
+      }
+      .order {
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 1fr auto;
+        padding: 14px 16px;
+      }
+      .order-number {
+        font-weight: 750;
+      }
+      .order-details {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .order-total {
+        font-weight: 750;
+        text-align: right;
+      }
+      .order-status {
+        color: var(--leaf-dark);
+        font-size: 12px;
+        margin-top: 3px;
+      }
       @media (max-width: 560px) {
         .card {
           padding: 24px 18px;
@@ -133,6 +205,9 @@
         .saved-card {
           align-items: stretch;
           flex-direction: column;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -156,12 +231,60 @@
         </div>
 
         <div class="section">
+          <h2>Profile</h2>
+          <p class="section-copy">
+            These details can prefill checkout on future orders.
+          </p>
+          <form id="profile-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="first-name">First Name</label>
+                <input id="first-name" type="text" autocomplete="given-name" />
+              </div>
+              <div class="field">
+                <label for="last-name">Last Name</label>
+                <input id="last-name" type="text" autocomplete="family-name" />
+              </div>
+              <div class="field full">
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="tel" autocomplete="tel" />
+              </div>
+              <div class="field full">
+                <label for="default-address">Default Delivery Address</label>
+                <input
+                  id="default-address"
+                  type="text"
+                  autocomplete="street-address"
+                />
+              </div>
+              <label class="consent field full">
+                <input id="marketing-consent" type="checkbox" />
+                <span>
+                  Email me occasional Family Pantry news and offers. Order and
+                  account emails are sent regardless of this choice.
+                </span>
+              </label>
+            </div>
+            <button id="save-profile" type="submit">Save Profile</button>
+            <p id="profile-message" role="status"></p>
+          </form>
+        </div>
+
+        <div class="section">
           <h2>Saved Payment Methods</h2>
           <p class="section-copy">
             Cards are securely stored by Square. The Family Pantry never
             receives your full card number.
           </p>
           <div id="cards"><div class="empty">Loading saved cards...</div></div>
+        </div>
+
+        <div class="section">
+          <h2>Order History</h2>
+          <p class="section-copy">
+            Orders associated with this email appear here.
+          </p>
+          <div id="orders"><div class="empty">Loading orders...</div></div>
         </div>
 
         <div class="actions">
@@ -174,6 +297,15 @@
     <script>
       const emailElement = document.getElementById('account-email');
       const cardsElement = document.getElementById('cards');
+      const ordersElement = document.getElementById('orders');
+      const profileForm = document.getElementById('profile-form');
+      const profileMessage = document.getElementById('profile-message');
+
+      function escapeHtml(value) {
+        const element = document.createElement('div');
+        element.textContent = String(value || '');
+        return element.innerHTML;
+      }
 
       async function loadAccount() {
         const session = await fetch('/account/session').then((response) =>
@@ -185,8 +317,48 @@
         }
 
         emailElement.textContent = session.customer.email;
-        await loadCards();
+        document.getElementById('first-name').value =
+          session.customer.firstName || '';
+        document.getElementById('last-name').value =
+          session.customer.lastName || '';
+        document.getElementById('phone').value = session.customer.phone || '';
+        document.getElementById('default-address').value =
+          session.customer.defaultAddress || '';
+        document.getElementById('marketing-consent').checked =
+          session.customer.marketingConsent === true;
+
+        await Promise.all([loadCards(), loadOrders()]);
       }
+
+      profileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = document.getElementById('save-profile');
+        button.disabled = true;
+        profileMessage.textContent = 'Saving...';
+
+        try {
+          const response = await fetch('/account/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              firstName: document.getElementById('first-name').value,
+              lastName: document.getElementById('last-name').value,
+              phone: document.getElementById('phone').value,
+              defaultAddress: document.getElementById('default-address').value,
+              marketingConsent:
+                document.getElementById('marketing-consent').checked,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error);
+          profileMessage.textContent = 'Profile saved.';
+        } catch (error) {
+          profileMessage.textContent =
+            error.message || 'Unable to save your profile.';
+        } finally {
+          button.disabled = false;
+        }
+      });
 
       async function loadCards() {
         const response = await fetch('/account/cards');
@@ -215,6 +387,44 @@
               </div>
             `,
           )
+          .join('');
+      }
+
+      async function loadOrders() {
+        const response = await fetch('/account/orders');
+        const result = await response.json();
+
+        if (!response.ok) {
+          ordersElement.innerHTML = `<div class="empty">${escapeHtml(
+            result.error || 'Unable to load orders.',
+          )}</div>`;
+          return;
+        }
+
+        if (!result.orders.length) {
+          ordersElement.innerHTML =
+            '<div class="empty">No orders are associated with this account yet.</div>';
+          return;
+        }
+
+        ordersElement.innerHTML = result.orders
+          .map((order) => {
+            const deliveryTime = order.deliveryTime
+              ? new Date(order.deliveryTime).toLocaleString()
+              : 'Delivery time unavailable';
+            return `
+              <div class="order">
+                <div>
+                  <a class="order-number" href="/track.html?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(emailElement.textContent)}">Order ${escapeHtml(order.orderNumber)}</a>
+                  <div class="order-details">${escapeHtml(deliveryTime)} · ${escapeHtml(order.paymentMethod)}</div>
+                </div>
+                <div>
+                  <div class="order-total">$${Number(order.total).toFixed(2)}</div>
+                  <div class="order-status">${escapeHtml(order.status)}</div>
+                </div>
+              </div>
+            `;
+          })
           .join('');
       }
 

@@ -50,7 +50,13 @@ function getSession(req) {
             customer_sessions.id AS session_id,
             customers.id,
             customers.email,
-            customers.square_customer_id
+            customers.square_customer_id,
+            customers.first_name,
+            customers.last_name,
+            customers.phone,
+            customers.default_address,
+            customers.marketing_consent,
+            customers.marketing_consent_at
           FROM customer_sessions
           JOIN customers ON customers.id = customer_sessions.customer_id
           WHERE customer_sessions.token_hash = ?
@@ -239,6 +245,15 @@ async function verifyLoginCode(email, code) {
   const customer = db
     .prepare('SELECT * FROM customers WHERE email = ?')
     .get(normalizedEmail);
+
+  db.prepare(
+    `
+      UPDATE orders
+      SET customer_id = ?
+      WHERE customer_id IS NULL AND LOWER(email) = ?
+    `,
+  ).run(customer.id, normalizedEmail);
+
   const squareCustomerId = await ensureSquareCustomer(customer);
   const token = crypto.randomBytes(32).toString('base64url');
 
