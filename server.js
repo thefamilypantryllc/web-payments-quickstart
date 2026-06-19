@@ -60,6 +60,31 @@ function validateDeliveryTime(deliveryTime) {
   return null;
 }
 
+async function getDeliveryAreaResult(customerLat, customerLon) {
+  const storeLat = 39.5663;
+  const storeLon = -94.4485;
+  const response = await fetch(
+    `https://atlas.microsoft.com/route/directions/json` +
+      `?api-version=1.0` +
+      `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
+      `&query=${storeLat},${storeLon}:${customerLat},${customerLon}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Address validation failed (${response.status}).`);
+  }
+
+  const data = await response.json();
+  const meters = data.routes?.[0]?.summary?.lengthInMeters;
+
+  if (!Number.isFinite(meters)) {
+    throw new Error('No driving route was found for that address.');
+  }
+
+  const miles = meters * 0.000621371;
+  return { allowed: miles <= 15, miles };
+}
+
 async function createPayment(req, res) {
   const payload = await json(req);
   const customerSession = getSession(req);
@@ -80,13 +105,16 @@ async function createPayment(req, res) {
     });
   }
   if (payload.lat && payload.lon) {
-    const validationResponse = await fetch('/validate-address', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: payload.lat, lon: payload.lon }),
-    });
+    let check;
 
-    const check = await validationResponse.json();
+    try {
+      check = await getDeliveryAreaResult(payload.lat, payload.lon);
+    } catch (err) {
+      return send(res, 502, {
+        success: false,
+        error: err.message || 'Unable to validate the delivery address.',
+      });
+    }
 
     if (!check.allowed) {
       return send(res, 400, {
@@ -337,13 +365,16 @@ async function createCashOrder(req, res) {
     });
   }
   if (payload.lat && payload.lon) {
-    const validationResponse = await fetch('/validate-address', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: payload.lat, lon: payload.lon }),
-    });
+    let check;
 
-    const check = await validationResponse.json();
+    try {
+      check = await getDeliveryAreaResult(payload.lat, payload.lon);
+    } catch (err) {
+      return send(res, 502, {
+        success: false,
+        error: err.message || 'Unable to validate the delivery address.',
+      });
+    }
 
     if (!check.allowed) {
       return send(res, 400, {
@@ -516,24 +547,8 @@ async function validateDeliveryAddress(req, res) {
   try {
     const payload = await json(req);
 
-    const customerLat = payload.lat;
-    const customerLon = payload.lon;
-
-    const STORE_LAT = 39.5663;
-    const STORE_LON = -94.4485;
-
-    const response = await fetch(
-      `https://atlas.microsoft.com/route/directions/json` +
-        `?api-version=1.0` +
-        `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
-        `&query=${STORE_LAT},${STORE_LON}:${customerLat},${customerLon}`,
-    );
-
-    const data = await response.json();
-    const meters = data.routes?.[0]?.summary?.lengthInMeters || 0;
-    const miles = meters * 0.000621371;
-
-    return send(res, 200, { allowed: miles <= 15, miles });
+    const result = await getDeliveryAreaResult(payload.lat, payload.lon);
+    return send(res, 200, result);
   } catch (err) {
     console.error(err);
     return send(res, 500, { allowed: false, error: err.message });

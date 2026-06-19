@@ -1438,7 +1438,20 @@
               }),
             });
 
-            const result = await response.json();
+            const responseText = await response.text();
+            let result;
+
+            try {
+              result = JSON.parse(responseText);
+            } catch {
+              throw new Error(
+                response.ok
+                  ? 'The server returned an invalid response.'
+                  : responseText ||
+                      'The server could not create the cash order.',
+              );
+            }
+
             const subtotal = result.subtotal;
             const deliveryFee = result.deliveryFee;
             const salesTax = result.salesTax;
