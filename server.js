@@ -1,6 +1,6 @@
 require('dotenv').config();
 // micro provides http helpers!
-const { json, send } = require('micro');
+const { buffer, json, send } = require('micro');
 // microrouter provides http server routing
 const { router, get, post } = require('microrouter');
 // serve-handler serves static assets
@@ -12,12 +12,14 @@ const retry = require('async-retry');
 const logger = require('./server/logger');
 // square provides the API client and error types
 const { client: square } = require('./server/square');
+const { WebhooksHelper } = require('square');
 
 require('./database/init');
 const saveOrder = require('./database/saveOrder');
 const {
   clearSessionCookie,
   getSession,
+  isCustomerAccountsEnabled,
   requestLoginCode,
   requireSession,
   setSessionCookie,
@@ -204,6 +206,9 @@ async function createPayment(req, res) {
             items: (order.lineItems || []).map(
               (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
             ),
+            trackingUrl: process.env.PUBLIC_BASE_URL
+              ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
+              : '',
           }),
         });
         console.log('Power Automate notification sent');
@@ -274,6 +279,13 @@ async function createPayment(req, res) {
 
 async function storeCard(req, res) {
   try {
+    if (!isCustomerAccountsEnabled()) {
+      return send(res, 503, {
+        success: false,
+        error: 'Customer accounts are not available yet.',
+      });
+    }
+
     const customer = requireSession(req);
     const payload = await json(req);
 
@@ -432,6 +444,9 @@ async function createCashOrder(req, res) {
           items: (order.lineItems || []).map(
             (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
           ),
+          trackingUrl: process.env.PUBLIC_BASE_URL
+            ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
+            : '',
         }),
       });
       console.log('Power Automate notification sent');
@@ -485,9 +500,8 @@ async function addressSearch(req, res) {
         `&subscription-key=${process.env.AZURE_MAPS_KEY}` +
         `&query=${encodeURIComponent(query)}` +
         `&countrySet=US` +
-        `&lat=39.5663` +
-        `&lon=-94.4485` +
-        `&radius=25000`,
+        `&language=en-US` +
+        `&limit=8`,
     );
 
     const data = await response.json();
@@ -528,44 +542,52 @@ async function validateDeliveryAddress(req, res) {
 
 async function cartSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
-  const items = JSON.parse(decodeURIComponent(url.searchParams.get('items')));
+  const items = JSON.parse(
+    decodeURIComponent(url.searchParams.get('items') || '[]'),
+  );
 
-  const response = await square.orders.create({
-    idempotencyKey: crypto.randomUUID(),
-    order: {
-      locationId: process.env.SQUARE_LOCATION_ID,
-      lineItems: items.map((item) => ({
-        catalogObjectId: item.catalogObjectId,
-        quantity: item.quantity,
-      })),
-    },
+  if (!items.length) {
+    return send(res, 200, { items: [], subtotal: 0 });
+  }
+
+  const response = await square.catalog.batchGet({
+    objectIds: [...new Set(items.map((item) => item.catalogObjectId))],
+    includeRelatedObjects: true,
+  });
+  const objects = response.objects || response.result?.objects || [];
+  const relatedObjects =
+    response.relatedObjects || response.result?.relatedObjects || [];
+  const variations = new Map(objects.map((object) => [object.id, object]));
+  const parentItems = new Map(
+    relatedObjects
+      .filter((object) => object.type === 'ITEM')
+      .map((object) => [object.id, object]),
+  );
+  const summaryItems = items.map((item) => {
+    const variation = variations.get(item.catalogObjectId);
+    const variationData = variation?.itemVariationData;
+    const parent = parentItems.get(variationData?.itemId);
+    const quantity = Number(item.quantity || 0);
+    const unitAmount = Number(variationData?.priceMoney?.amount || 0) / 100;
+
+    return {
+      name: parent?.itemData?.name || 'Item',
+      variationName: variationData?.name || '',
+      quantity: String(quantity),
+      totalPrice: unitAmount * quantity,
+    };
   });
 
-  const order = response.result?.order || response.order;
-
-  if (!order) {
-    return send(res, 500, { error: 'Square did not return an order' });
-  }
-
-  if (!order.lineItems) {
-    return send(res, 500, { error: 'Order returned with no line items' });
-  }
-
   return send(res, 200, {
-    items: order.lineItems.map((item) => ({
-      name: item.name,
-      variationName: item.variationName,
-      quantity: item.quantity,
-      totalPrice: Number(item.totalMoney.amount) / 100,
-    })),
-    subtotal: Number(order.totalMoney.amount) / 100,
+    items: summaryItems,
+    subtotal: summaryItems.reduce((sum, item) => sum + item.totalPrice, 0),
   });
 }
 
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
   res.setHeader(
-    'Content-Security-Policy',
+    'Content-Security-Policy-Report-Only',
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://web.squarecdn.com https://atlas.microsoft.com",
@@ -573,7 +595,7 @@ async function serveStatic(req, res) {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://atlas.microsoft.com https://*.atlas.microsoft.com",
-      "frame-src 'self' https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://applepay.cdn-apple.com",
+      "frame-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://applepay.cdn-apple.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -604,7 +626,213 @@ async function getSquareConfig(req, res) {
       String(process.env.SQUARE_ENVIRONMENT).toLowerCase() === 'sandbox'
         ? 'sandbox'
         : 'production',
+    customerAccountsEnabled: isCustomerAccountsEnabled(),
+    storeUrl:
+      process.env.SQUARE_STORE_URL ||
+      'https://www.checkout.thefamilypantry.org/s/orders',
   });
+}
+
+function moneyAmount(money) {
+  return Number(money?.amount || 0) / 100;
+}
+
+function getFulfillmentStatus(fulfillment) {
+  const state = String(fulfillment?.state || '').toUpperCase();
+
+  if (state === 'COMPLETED') return 'Delivered';
+  if (state === 'CANCELED' || state === 'FAILED') return 'Cancelled';
+  if (state === 'PREPARED' || state === 'RESERVED') return 'Preparing';
+  return 'Received';
+}
+
+function getOrderRecipient(order) {
+  const fulfillment = order.fulfillments?.[0];
+  return (
+    fulfillment?.deliveryDetails?.recipient ||
+    fulfillment?.shipmentDetails?.recipient ||
+    fulfillment?.pickupDetails?.recipient ||
+    {}
+  );
+}
+
+function formatSquareAddress(address = {}) {
+  return [
+    address.addressLine1,
+    address.addressLine2,
+    [address.locality, address.administrativeDistrictLevel1]
+      .filter(Boolean)
+      .join(', '),
+    address.postalCode,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function getOrderDeliveryTime(order) {
+  const fulfillment = order.fulfillments?.[0];
+  return (
+    fulfillment?.deliveryDetails?.deliverAt ||
+    fulfillment?.shipmentDetails?.expectedShippedAt ||
+    fulfillment?.pickupDetails?.pickupAt ||
+    order.createdAt
+  );
+}
+
+async function notifyPowerAutomate(payload) {
+  if (!process.env.POWER_AUTOMATE_URL) return;
+
+  const response = await fetch(process.env.POWER_AUTOMATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Power Automate returned ${response.status}.`);
+  }
+}
+
+async function syncSquareOnlineOrder(order) {
+  if (!order?.id) return;
+
+  const db = require('./database/db');
+  const fulfillment = order.fulfillments?.[0];
+  const status = getFulfillmentStatus(fulfillment);
+  const existing = db
+    .prepare('SELECT id, order_number FROM orders WHERE square_order_id = ?')
+    .get(order.id);
+
+  if (existing) {
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(
+      status,
+      existing.id,
+    );
+    return existing.order_number;
+  }
+
+  const recipient = getOrderRecipient(order);
+  const customerName =
+    recipient.displayName ||
+    order.customerId ||
+    order.metadata?.customerName ||
+    'Square Online Customer';
+  const subtotal = (order.lineItems || []).reduce(
+    (sum, item) => sum + moneyAmount(item.totalMoney),
+    0,
+  );
+  const deliveryFee = (order.serviceCharges || []).reduce(
+    (sum, charge) => sum + moneyAmount(charge.totalMoney),
+    0,
+  );
+  const salesTax = moneyAmount(order.totalTaxMoney);
+  const tip = moneyAmount(order.totalTipMoney);
+  const total = moneyAmount(order.totalMoney);
+  const paymentMethod = order.tenders?.[0]?.type === 'CASH' ? 'Cash' : 'Card';
+  const orderNumber = saveOrder({
+    squareOrderId: order.id,
+    customerName,
+    phone: recipient.phoneNumber || '',
+    email: recipient.emailAddress || '',
+    address: formatSquareAddress(recipient.address),
+    deliveryTime: getOrderDeliveryTime(order),
+    paymentMethod,
+    status,
+    subtotal,
+    deliveryFee,
+    salesTax,
+    tip,
+    total,
+  });
+  const [firstName = customerName, ...lastNameParts] = customerName.split(' ');
+  const baseUrl = String(process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+
+  await notifyPowerAutomate({
+    eventType: 'squareOnlineOrder',
+    orderNumber: String(orderNumber),
+    firstName,
+    lastName: lastNameParts.join(' '),
+    email: recipient.emailAddress || '',
+    phone: recipient.phoneNumber || '',
+    address: formatSquareAddress(recipient.address),
+    deliveryTime: getOrderDeliveryTime(order),
+    paymentMethod,
+    subtotal,
+    deliveryFee,
+    salesTax,
+    tip,
+    grandTotal: total,
+    items: (order.lineItems || []).map(
+      (item) =>
+        `${item.name || 'Item'}${item.variationName ? ` (${item.variationName})` : ''} x${item.quantity || 1}`,
+    ),
+    trackingUrl:
+      baseUrl && recipient.emailAddress
+        ? `${baseUrl}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(recipient.emailAddress)}`
+        : '',
+  });
+
+  return orderNumber;
+}
+
+async function squareWebhook(req, res) {
+  try {
+    const rawBody = (await buffer(req)).toString('utf8');
+    const signature = req.headers['x-square-hmacsha256-signature'];
+    const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    const notificationUrl = process.env.SQUARE_WEBHOOK_URL;
+
+    if (!signatureKey || !notificationUrl) {
+      return send(res, 503, { error: 'Square webhook is not configured.' });
+    }
+
+    const valid = await WebhooksHelper.verifySignature({
+      requestBody: rawBody,
+      signatureHeader: signature,
+      signatureKey,
+      notificationUrl,
+    });
+
+    if (!valid) {
+      return send(res, 403, { error: 'Invalid Square webhook signature.' });
+    }
+
+    const event = JSON.parse(rawBody);
+    const payment = event.data?.object?.payment;
+
+    if (payment && payment.status !== 'COMPLETED') {
+      return send(res, 200, { received: true });
+    }
+
+    const orderId =
+      payment?.orderId ||
+      event.data?.object?.order_updated?.order_id ||
+      event.data?.object?.order_created?.order_id ||
+      event.data?.object?.order?.id;
+
+    if (!orderId) {
+      return send(res, 200, { received: true });
+    }
+
+    const response = await square.orders.get({ orderId });
+    const order = response.order || response.result?.order;
+    await syncSquareOnlineOrder(order);
+
+    return send(res, 200, { received: true });
+  } catch (err) {
+    console.error('SQUARE WEBHOOK ERROR:', err);
+    return send(res, 500, { error: 'Unable to process Square webhook.' });
+  }
+}
+
+async function redirectToStore(req, res) {
+  res.statusCode = 302;
+  res.setHeader(
+    'Location',
+    process.env.SQUARE_STORE_URL ||
+      'https://www.checkout.thefamilypantry.org/s/orders',
+  );
+  res.end();
 }
 
 function serializeCard(card) {
@@ -620,6 +848,13 @@ function serializeCard(card) {
 }
 
 async function requestCustomerCode(req, res) {
+  if (!isCustomerAccountsEnabled()) {
+    return send(res, 503, {
+      success: false,
+      error: 'Customer sign-in is not available yet.',
+    });
+  }
+
   try {
     const { email } = await json(req);
     await requestLoginCode(email);
@@ -640,6 +875,13 @@ async function requestCustomerCode(req, res) {
 }
 
 async function verifyCustomerCode(req, res) {
+  if (!isCustomerAccountsEnabled()) {
+    return send(res, 503, {
+      success: false,
+      error: 'Customer sign-in is not available yet.',
+    });
+  }
+
   try {
     const { email, code } = await json(req);
     const result = await verifyLoginCode(email, code);
@@ -659,13 +901,18 @@ async function verifyCustomerCode(req, res) {
 }
 
 async function getCustomerSession(req, res) {
+  if (!isCustomerAccountsEnabled()) {
+    return send(res, 200, { enabled: false, loggedIn: false });
+  }
+
   const customer = getSession(req);
 
   if (!customer) {
-    return send(res, 200, { loggedIn: false });
+    return send(res, 200, { enabled: true, loggedIn: false });
   }
 
   return send(res, 200, {
+    enabled: true,
     loggedIn: true,
     customer: {
       email: customer.email,
@@ -689,6 +936,13 @@ async function logoutCustomer(req, res) {
 
 async function listCustomerCards(req, res) {
   try {
+    if (!isCustomerAccountsEnabled()) {
+      return send(res, 503, {
+        success: false,
+        error: 'Customer accounts are not available yet.',
+      });
+    }
+
     const customer = requireSession(req);
     const page = await square.cards.list({
       customerId: customer.square_customer_id,
@@ -711,6 +965,13 @@ async function listCustomerCards(req, res) {
 
 async function removeCustomerCard(req, res) {
   try {
+    if (!isCustomerAccountsEnabled()) {
+      return send(res, 503, {
+        success: false,
+        error: 'Customer accounts are not available yet.',
+      });
+    }
+
     const customer = requireSession(req);
     const { cardId } = await json(req);
     const response = await square.cards.get({ cardId });
@@ -845,12 +1106,14 @@ async function bulkDeleteOrders(req, res) {
   return send(res, 200, { success: true });
 }
 module.exports = router(
+  post('/webhooks/square', squareWebhook),
   post('/auth/request-code', requestCustomerCode),
   post('/auth/verify-code', verifyCustomerCode),
   post('/auth/logout', logoutCustomer),
   get('/account/session', getCustomerSession),
   get('/account/cards', listCustomerCards),
   get('/square-config', getSquareConfig),
+  get('/store', redirectToStore),
   post('/account/cards/save', storeCard),
   post('/account/cards/remove', removeCustomerCard),
   post('/admin/orders/bulk-status', bulkUpdateStatus),

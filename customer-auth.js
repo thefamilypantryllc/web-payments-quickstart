@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const db = require('./database/db');
 const { client: square } = require('./server/square');
 
@@ -14,6 +13,13 @@ function normalizeEmail(email) {
 
 function hash(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function isCustomerAccountsEnabled() {
+  return (
+    String(process.env.CUSTOMER_ACCOUNTS_ENABLED).toLowerCase() === 'true' &&
+    Boolean(process.env.LOGIN_CODE_POWER_AUTOMATE_URL)
+  );
 }
 
 function parseCookies(req) {
@@ -84,35 +90,26 @@ function clearSessionCookie(res) {
 }
 
 async function sendLoginCode(email, code) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`LOGIN CODE for ${email}: ${code}`);
-    return;
+  if (!isCustomerAccountsEnabled()) {
+    const error = new Error('Customer sign-in is not available yet.');
+    error.statusCode = 503;
+    throw error;
   }
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
+  const response = await fetch(process.env.LOGIN_CODE_POWER_AUTOMATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eventType: 'customerLoginCode',
+      email,
+      code,
+      expiresMinutes: CODE_LIFETIME_MINUTES,
+    }),
   });
 
-  await transporter.sendMail({
-    from: `"The Family Pantry" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Your Family Pantry sign-in code',
-    text: `Your sign-in code is ${code}. It expires in ${CODE_LIFETIME_MINUTES} minutes.`,
-    html: `
-      <div style="font-family:Arial,sans-serif;background:#eef8e9;padding:28px;">
-        <div style="max-width:520px;margin:auto;background:#fff;border:1px solid #d8e2d8;border-radius:8px;padding:28px;text-align:center;">
-          <h1 style="color:#202d24;font-size:24px;">Your sign-in code</h1>
-          <p style="color:#647168;">Enter this code to access your Family Pantry account.</p>
-          <div style="font-size:34px;font-weight:bold;letter-spacing:8px;color:#285c37;margin:22px 0;">${code}</div>
-          <p style="color:#647168;font-size:13px;">This code expires in ${CODE_LIFETIME_MINUTES} minutes. If you did not request it, you can ignore this email.</p>
-        </div>
-      </div>
-    `,
-  });
+  if (!response.ok) {
+    throw new Error('Power Automate could not send the sign-in code.');
+  }
 }
 
 async function ensureSquareCustomer(customer) {
@@ -266,6 +263,7 @@ module.exports = {
   clearSessionCookie,
   ensureSquareCustomer,
   getSession,
+  isCustomerAccountsEnabled,
   normalizeEmail,
   requestLoginCode,
   requireSession,

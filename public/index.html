@@ -18,7 +18,9 @@
     />
     <p>Farm-Raised &bull; Garden-Fresh &bull; Fresh-Baked</p>
     <div class="account-links">
-      <a id="account-sign-in" href="/login.html?redirect=/">Customer Sign In</a>
+      <a id="account-sign-in" href="/login.html?redirect=/" hidden
+        >Customer Sign In</a
+      >
       <a id="account-manage" href="/account.html" hidden>My Account</a>
     </div>
   </header>
@@ -911,6 +913,24 @@
 
         setupDeliveryTimeInput();
 
+        function prefillCheckoutFields() {
+          const params = new URLSearchParams(window.location.search);
+          const fields = {
+            firstName: 'customer-first-name',
+            lastName: 'customer-last-name',
+            phone: 'customer-phone',
+            email: 'customer-email',
+            address: 'customer-address',
+          };
+
+          Object.entries(fields).forEach(([parameter, id]) => {
+            const value = params.get(parameter);
+            if (value) document.getElementById(id).value = value;
+          });
+        }
+
+        prefillCheckoutFields();
+
         const addressInput = document.getElementById('customer-address');
 
         const suggestions = document.getElementById('address-suggestions');
@@ -943,6 +963,12 @@
           });
 
           const deliveryCheck = await validation.json();
+
+          if (!validation.ok) {
+            throw new Error(
+              deliveryCheck.error || 'Unable to validate this address.',
+            );
+          }
 
           if (!deliveryCheck.allowed) {
             throw new Error(
@@ -977,12 +1003,31 @@
         }
 
         const locationId = squareConfig.locationId;
+        const paymentStatusContainer = document.getElementById(
+          'payment-status-container',
+        );
+
+        if (!window.Square) {
+          paymentStatusContainer.textContent =
+            'The secure card form could not load. Please refresh the page.';
+          throw new Error('Square Web Payments SDK did not load.');
+        }
+
         const payments = Square.payments(
           squareConfig.applicationId,
           squareConfig.locationId,
         );
-        const card = await payments.card();
-        await card.attach('#card-container');
+        let card = null;
+
+        try {
+          card = await payments.card();
+          await card.attach('#card-container');
+        } catch (error) {
+          console.error('CARD INITIALIZATION ERROR:', error);
+          paymentStatusContainer.textContent =
+            'The secure card form is temporarily unavailable. Please refresh or choose Cash on Delivery.';
+          document.getElementById('card-button').disabled = true;
+        }
 
         const savedCardSelect = document.getElementById('saved-card-select');
         const savedPaymentSection = document.getElementById(
@@ -1006,11 +1051,14 @@
             response.json(),
           );
 
+          if (!session.enabled) return;
+
+          document.getElementById('account-sign-in').hidden = session.loggedIn;
+          document.getElementById('account-manage').hidden = !session.loggedIn;
+
           if (!session.loggedIn) return;
 
           customerAccount = session.customer;
-          document.getElementById('account-sign-in').hidden = true;
-          document.getElementById('account-manage').hidden = false;
 
           const emailInput = document.getElementById('customer-email');
           if (!emailInput.value) emailInput.value = customerAccount.email;
@@ -1102,6 +1150,9 @@
 
           if (savedCardSelect.value) {
             processSavedCardPayment(savedCardSelect.value, statusContainer);
+          } else if (!card) {
+            statusContainer.textContent =
+              'The secure card form is unavailable. Please refresh the page.';
           } else {
             processTokenPayment('Card', card, statusContainer);
           }
@@ -1297,7 +1348,7 @@
             phone,
             email,
             address,
-            deliveryTime,
+            deliveryTime: new Date(deliveryTime).toISOString(),
             lat,
             lon,
             items: cartItems,
@@ -1379,7 +1430,7 @@
                 phone,
                 email,
                 address,
-                deliveryTime,
+                deliveryTime: new Date(deliveryTime).toISOString(),
                 lat,
                 lon,
                 items: cartItems,
@@ -1537,11 +1588,23 @@
 
         const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
 
-        const response = await fetch(
-          `/cart-summary?items=${encodeURIComponent(JSON.stringify(cartItems))}`,
-        );
+        try {
+          const response = await fetch(
+            `/cart-summary?items=${encodeURIComponent(JSON.stringify(cartItems))}`,
+          );
+          const result = await response.json();
 
-        summary = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || 'Unable to load your cart.');
+          }
+
+          summary = result;
+        } catch (error) {
+          console.error('CART SUMMARY ERROR:', error);
+          summary = { items: [], subtotal: 0 };
+          document.getElementById('payment-status-container').textContent =
+            error.message;
+        }
 
         console.log('SUMMARY:', summary);
 

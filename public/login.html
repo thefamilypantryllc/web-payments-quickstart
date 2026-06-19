@@ -175,6 +175,26 @@
         message.classList.toggle('error', isError);
       }
 
+      async function initializeSignIn() {
+        try {
+          const config = await fetch('/square-config').then((response) =>
+            response.json(),
+          );
+
+          if (!config.customerAccountsEnabled) {
+            emailInput.disabled = true;
+            sendButton.disabled = true;
+            showMessage(
+              'Customer sign-in is coming soon while secure email delivery is being configured.',
+            );
+          }
+        } catch (error) {
+          emailInput.disabled = true;
+          sendButton.disabled = true;
+          showMessage('Customer sign-in is temporarily unavailable.', true);
+        }
+      }
+
       emailStep.addEventListener('submit', async (event) => {
         event.preventDefault();
         sendButton.disabled = true;
@@ -224,6 +244,8 @@
           verifyButton.disabled = false;
         }
       });
+
+      initializeSignIn();
     </script>
   </body>
 </html>

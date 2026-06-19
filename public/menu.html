@@ -1,29 +1,15 @@
-<select id="bagel-size">
-  <option value="FYD3KTLJKWLUSSANM727ACII">Soup &amp; Sandwich</option>
-</select>
-
-<button onclick="addToCart()">Add To Cart</button>
-<script>
-  function addToCart() {
-    const variationId = document.getElementById('bagel-size').value;
-
-    let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
-
-    const existingItem = cartItems.find(
-      (item) => item.catalogObjectId === variationId,
-    );
-
-    if (existingItem) {
-      existingItem.quantity = String(Number(existingItem.quantity) + 1);
-    } else {
-      cartItems.push({
-        catalogObjectId: variationId,
-        quantity: '1',
-      });
-    }
-
-    localStorage.setItem('cartItems', JSON.stringify(cartItems));
-
-    console.log(cartItems);
-  }
-</script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content="0;url=/store" />
+    <title>Opening The Family Pantry Store</title>
+  </head>
+  <body>
+    <p>Opening The Family Pantry store...</p>
+    <script>
+      window.location.replace('/store');
+    </script>
+  </body>
+</html>
