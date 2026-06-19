@@ -857,8 +857,8 @@
           id="password-input"
           placeholder="Enter password"
         />
-        <button onclick="login()">Sign In</button>
-        <div id="login-error">Incorrect password. Please try again.</div>
+        <button id="login-button" onclick="login()">Sign In</button>
+        <div id="login-error">Unable to sign in. Please try again.</div>
       </div>
     </div>
 
@@ -1066,18 +1066,62 @@
     </div>
 
     <script>
-      const ADMIN_PASSWORD = 'familypantry2025';
       let allOrders = [];
       let currentOrderId = null;
 
-      function login() {
-        const pw = document.getElementById('password-input').value;
-        if (pw === ADMIN_PASSWORD) {
-          document.getElementById('login-screen').style.display = 'none';
-          document.getElementById('dashboard').style.display = 'block';
-          loadOrders();
-        } else {
-          document.getElementById('login-error').style.display = 'block';
+      function showLogin() {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+      }
+
+      function showDashboard() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+      }
+
+      async function login() {
+        const passwordInput = document.getElementById('password-input');
+        const loginButton = document.getElementById('login-button');
+        const loginError = document.getElementById('login-error');
+        loginButton.disabled = true;
+        loginError.style.display = 'none';
+
+        try {
+          const response = await fetch('/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: passwordInput.value }),
+          });
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Unable to sign in.');
+          }
+
+          passwordInput.value = '';
+          showDashboard();
+          await loadOrders();
+        } catch (error) {
+          loginError.textContent = error.message || 'Unable to sign in.';
+          loginError.style.display = 'block';
+        } finally {
+          loginButton.disabled = false;
+        }
+      }
+
+      async function initializeAdmin() {
+        try {
+          const response = await fetch('/admin/session');
+          const session = await response.json();
+
+          if (session.authenticated) {
+            showDashboard();
+            await loadOrders();
+          } else {
+            showLogin();
+          }
+        } catch {
+          showLogin();
         }
       }
 
@@ -1087,16 +1131,30 @@
           if (e.key === 'Enter') login();
         });
 
-      function logout() {
-        document.getElementById('login-screen').style.display = 'flex';
-        document.getElementById('dashboard').style.display = 'none';
-        document.getElementById('password-input').value = '';
+      async function logout() {
+        try {
+          await fetch('/admin/logout', { method: 'POST' });
+        } finally {
+          allOrders = [];
+          document.getElementById('password-input').value = '';
+          showLogin();
+        }
       }
 
       async function loadOrders() {
         try {
           const res = await fetch('/admin/orders');
-          allOrders = await res.json();
+
+          if (res.status === 401) {
+            showLogin();
+            return;
+          }
+
+          const result = await res.json();
+          if (!res.ok)
+            throw new Error(result.error || 'Unable to load orders.');
+
+          allOrders = result;
           renderStats();
           filterOrders();
           document.getElementById('last-updated').textContent =
@@ -1382,6 +1440,7 @@
 
       // Auto-refresh every 60 seconds
       setInterval(loadOrders, 60000);
+      initializeAdmin();
     </script>
   </body>
 </html>

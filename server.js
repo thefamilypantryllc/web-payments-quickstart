@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 // micro provides http helpers!
 const { buffer, json, send } = require('micro');
 // microrouter provides http server routing
@@ -28,6 +29,211 @@ const {
 
 const fs = require('fs');
 const path = require('path');
+const ADMIN_COOKIE_NAME = 'fp_admin';
+const ADMIN_SESSION_HOURS = 12;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+const adminLoginAttempts = new Map();
+const requestBuckets = new Map();
+const validOrderStatuses = new Set([
+  'Received',
+  'Paid',
+  'Preparing',
+  'Out for Delivery',
+  'Delivered',
+  'Cancelled',
+]);
+
+function parseCookieHeader(req) {
+  return Object.fromEntries(
+    String(req.headers.cookie || '')
+      .split(';')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separator = part.indexOf('=');
+        return [
+          decodeURIComponent(part.slice(0, separator)),
+          decodeURIComponent(part.slice(separator + 1)),
+        ];
+      }),
+  );
+}
+
+function getClientAddress(req) {
+  return String(
+    req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown',
+  )
+    .split(',')[0]
+    .trim();
+}
+
+function checkRateLimit(req, res, scope, maxRequests, windowMs) {
+  const key = `${scope}:${getClientAddress(req)}`;
+  const now = Date.now();
+  const existing = requestBuckets.get(key);
+  const bucket =
+    existing && now - existing.startedAt < windowMs
+      ? existing
+      : { count: 0, startedAt: now };
+
+  if (bucket.count >= maxRequests) {
+    send(res, 429, {
+      success: false,
+      error: 'Too many requests. Please wait and try again.',
+    });
+    return false;
+  }
+
+  bucket.count += 1;
+  requestBuckets.set(key, bucket);
+  return true;
+}
+
+function validateCheckoutCustomer(payload) {
+  const firstName = String(payload.firstName || '').trim();
+  const lastName = String(payload.lastName || '').trim();
+  const phone = String(payload.phone || '').replace(/\D/g, '');
+  const email = String(payload.email || '')
+    .trim()
+    .toLowerCase();
+  const address = String(payload.address || '').trim();
+
+  if (!firstName || !lastName || !address) {
+    return 'Name and delivery address are required.';
+  }
+
+  if (phone.length < 10 || phone.length > 15) {
+    return 'Please enter a valid phone number.';
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return 'Please enter a valid email address.';
+  }
+
+  if (
+    !Number.isFinite(Number(payload.lat)) ||
+    !Number.isFinite(Number(payload.lon))
+  ) {
+    return 'Please select a valid delivery address from the suggestions.';
+  }
+
+  return null;
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    crypto.timingSafeEqual(leftBuffer, rightBuffer)
+  );
+}
+
+function createAdminToken() {
+  const expiresAt = Date.now() + ADMIN_SESSION_HOURS * 60 * 60 * 1000;
+  const signature = crypto
+    .createHmac('sha256', process.env.ADMIN_PASSWORD)
+    .update(String(expiresAt))
+    .digest('base64url');
+
+  return `${expiresAt}.${signature}`;
+}
+
+function hasAdminSession(req) {
+  const password = process.env.ADMIN_PASSWORD;
+  const token = parseCookieHeader(req)[ADMIN_COOKIE_NAME];
+
+  if (!password || !token) return false;
+
+  const [expiresAt, signature] = token.split('.');
+  if (!expiresAt || !signature || Number(expiresAt) <= Date.now()) return false;
+
+  const expectedSignature = crypto
+    .createHmac('sha256', password)
+    .update(expiresAt)
+    .digest('base64url');
+
+  return safeEqual(signature, expectedSignature);
+}
+
+function setAdminCookie(req, res, token, maxAge) {
+  const secure =
+    String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https'
+      ? '; Secure'
+      : '';
+
+  res.setHeader(
+    'Set-Cookie',
+    `${ADMIN_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${maxAge}${secure}`,
+  );
+}
+
+function requireAdmin(req, res) {
+  if (hasAdminSession(req)) return true;
+
+  send(res, 401, {
+    success: false,
+    error: 'Admin sign-in is required.',
+  });
+  return false;
+}
+
+async function loginAdmin(req, res) {
+  const configuredPassword = process.env.ADMIN_PASSWORD;
+  const clientAddress = getClientAddress(req);
+  const now = Date.now();
+  const attempt = adminLoginAttempts.get(clientAddress);
+
+  if (!configuredPassword) {
+    return send(res, 503, {
+      success: false,
+      error: 'Admin access is not configured.',
+    });
+  }
+
+  if (
+    attempt &&
+    attempt.count >= ADMIN_LOGIN_MAX_ATTEMPTS &&
+    now - attempt.startedAt < ADMIN_LOGIN_WINDOW_MS
+  ) {
+    return send(res, 429, {
+      success: false,
+      error: 'Too many attempts. Please try again later.',
+    });
+  }
+
+  const { password } = await json(req);
+
+  if (!safeEqual(password || '', configuredPassword)) {
+    const activeAttempt =
+      attempt && now - attempt.startedAt < ADMIN_LOGIN_WINDOW_MS
+        ? attempt
+        : { count: 0, startedAt: now };
+    activeAttempt.count += 1;
+    adminLoginAttempts.set(clientAddress, activeAttempt);
+
+    return send(res, 401, {
+      success: false,
+      error: 'Incorrect password.',
+    });
+  }
+
+  adminLoginAttempts.delete(clientAddress);
+  const maxAge = ADMIN_SESSION_HOURS * 60 * 60;
+  setAdminCookie(req, res, createAdminToken(), maxAge);
+  return send(res, 200, { success: true });
+}
+
+async function getAdminSession(req, res) {
+  return send(res, 200, { authenticated: hasAdminSession(req) });
+}
+
+async function logoutAdmin(req, res) {
+  setAdminCookie(req, res, '', 0);
+  return send(res, 200, { success: true });
+}
 
 async function adminPage(req, res) {
   const html = fs.readFileSync(
@@ -177,10 +383,21 @@ async function createPayment(req, res) {
   const payload = await json(req);
   const customerSession = getSession(req);
 
+  if (!checkRateLimit(req, res, 'payment', 10, 15 * 60 * 1000)) return;
+
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
       success: false,
       error: 'Your cart is empty. Please add at least one item.',
+    });
+  }
+
+  const customerDetailsError = validateCheckoutCustomer(payload);
+
+  if (customerDetailsError) {
+    return send(res, 400, {
+      success: false,
+      error: customerDetailsError,
     });
   }
 
@@ -192,24 +409,22 @@ async function createPayment(req, res) {
       error: deliveryTimeError,
     });
   }
-  if (payload.lat && payload.lon) {
-    let check;
+  let deliveryCheck;
 
-    try {
-      check = await getDeliveryAreaResult(payload.lat, payload.lon);
-    } catch (err) {
-      return send(res, 502, {
-        success: false,
-        error: err.message || 'Unable to validate the delivery address.',
-      });
-    }
+  try {
+    deliveryCheck = await getDeliveryAreaResult(payload.lat, payload.lon);
+  } catch (err) {
+    return send(res, 502, {
+      success: false,
+      error: err.message || 'Unable to validate the delivery address.',
+    });
+  }
 
-    if (!check.allowed) {
-      return send(res, 400, {
-        success: false,
-        error: `Address is outside delivery area (${check.miles.toFixed(1)} miles).`,
-      });
-    }
+  if (!deliveryCheck.allowed) {
+    return send(res, 400, {
+      success: false,
+      error: `Address is outside delivery area (${deliveryCheck.miles.toFixed(1)} miles).`,
+    });
   }
 
   let paymentSourceId = payload.sourceId;
@@ -241,170 +456,165 @@ async function createPayment(req, res) {
     paymentSourceId = savedCard.id;
   }
 
-  console.log('CARD PAYMENT PAYLOAD:');
-  console.dir(payload, { depth: null });
+  if (!payload.idempotencyKey || !payload.locationId || !paymentSourceId) {
+    return send(res, 400, {
+      success: false,
+      error: 'Payment authorization is incomplete. Please try again.',
+    });
+  }
 
-  logger.debug(JSON.stringify(payload));
+  try {
+    const orderResponse = await square.orders.create({
+      idempotencyKey: `${payload.idempotencyKey}-order`,
+      order: {
+        locationId: payload.locationId,
+        lineItems: payload.items.map((item) => ({
+          catalogObjectId: item.catalogObjectId,
+          quantity: item.quantity,
+        })),
+      },
+    });
+    const order = orderResponse.result?.order || orderResponse.order;
 
-  await retry(async (bail, attempt) => {
+    if (!order) {
+      throw new Error('Square did not return an order.');
+    }
+
+    const subtotal = Number(order.totalMoney.amount) / 100;
+    const deliveryFee = subtotal < 40 ? 3.0 : 0;
+    const salesTax = Math.round(subtotal * 0.08225 * 100) / 100;
+    const tipAmount =
+      Math.round(subtotal * ((payload.tipPercent || 0) / 100) * 100) / 100;
+    const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+    const paymentMethod = ['Apple Pay', 'Google Pay'].includes(
+      payload.paymentMethod,
+    )
+      ? payload.paymentMethod
+      : 'Card';
+    const payment = {
+      idempotencyKey: payload.idempotencyKey,
+      locationId: payload.locationId,
+      sourceId: paymentSourceId,
+      amountMoney: {
+        amount: BigInt(Math.round(grandTotal * 100)),
+        currency: 'USD',
+      },
+    };
+
+    if (customerSession?.square_customer_id) {
+      payment.customerId = customerSession.square_customer_id;
+    }
+
+    if (payload.verificationToken) {
+      payment.verificationToken = payload.verificationToken;
+    }
+
+    const paymentResponse = await retry(
+      async (bail, attempt) => {
+        try {
+          logger.debug('Submitting Square payment', { attempt });
+          const response = await square.payments.create(payment);
+          return response.payment;
+        } catch (err) {
+          if (err.errors) bail(err);
+          throw err;
+        }
+      },
+      { retries: 2 },
+    );
+
+    if (!paymentResponse || paymentResponse.status !== 'COMPLETED') {
+      throw new Error('Square did not complete the payment.');
+    }
+
+    const orderNumber = saveOrder({
+      squareOrderId: order.id,
+      customerId: customerSession?.id,
+      customerName: `${payload.firstName} ${payload.lastName}`,
+      phone: payload.phone,
+      email: payload.email,
+      address: payload.address,
+      deliveryTime: payload.deliveryTime,
+      paymentMethod,
+      status: 'Paid',
+      subtotal,
+      deliveryFee,
+      salesTax,
+      tip: tipAmount,
+      total: grandTotal,
+    });
+
     try {
-      logger.debug('Creating payment', { attempt });
-
-      const orderResponse = await square.orders.create({
-        idempotencyKey: crypto.randomUUID(),
-        order: {
-          locationId: payload.locationId,
-          lineItems: payload.items.map((item) => ({
-            catalogObjectId: item.catalogObjectId,
-            quantity: item.quantity,
-          })),
-        },
-      });
-
-      console.log('FULL ORDER RESPONSE');
-      console.dir(orderResponse, { depth: null });
-
-      const order = orderResponse.result?.order || orderResponse.order;
-
-      const subtotal = Number(order.totalMoney.amount) / 100;
-      const deliveryFee = subtotal < 40 ? 3.0 : 0;
-      const salesTax = subtotal * 0.08225;
-      const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
-      const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
-      const paymentMethod = ['Apple Pay', 'Google Pay'].includes(
-        payload.paymentMethod,
-      )
-        ? payload.paymentMethod
-        : 'Card';
-
-      console.log('CARD ORDER CREATED:');
-      console.dir(order, { depth: null });
-      console.log('BEFORE saveOrder');
-
-      const orderNumber = saveOrder({
-        squareOrderId: order.id,
-        customerId: customerSession?.id,
-        customerName: `${payload.firstName} ${payload.lastName}`,
-        phone: payload.phone,
+      await notifyPowerAutomate({
+        eventType: 'checkoutOrder',
+        orderNumber: String(orderNumber),
+        firstName: payload.firstName,
+        lastName: payload.lastName,
         email: payload.email,
+        phone: payload.phone,
         address: payload.address,
         deliveryTime: payload.deliveryTime,
         paymentMethod,
-        status: 'Paid',
         subtotal,
         deliveryFee,
         salesTax,
         tip: tipAmount,
-        total: grandTotal,
-      });
-
-      console.log('AFTER saveOrder');
-      console.log('ORDER NUMBER:', orderNumber);
-
-      // Send Power Automate notification
-      try {
-        await fetch(process.env.POWER_AUTOMATE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderNumber: String(orderNumber),
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            email: payload.email,
-            phone: payload.phone,
-            address: payload.address,
-            deliveryTime: payload.deliveryTime,
-            paymentMethod,
-            subtotal,
-            deliveryFee,
-            salesTax,
-            tip: tipAmount,
-            grandTotal,
-            items: (order.lineItems || []).map(
-              (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
-            ),
-            trackingUrl: process.env.PUBLIC_BASE_URL
-              ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
-              : '',
-          }),
-        });
-        console.log('Power Automate notification sent');
-      } catch (err) {
-        console.error('Power Automate notification failed:', err);
-      }
-
-      const payment = {
-        idempotencyKey: payload.idempotencyKey,
-        locationId: payload.locationId,
-        sourceId: paymentSourceId,
-        amountMoney: {
-          amount: BigInt(Math.round(grandTotal * 100)),
-          currency: 'USD',
-        },
-      };
-
-      if (customerSession?.square_customer_id) {
-        payment.customerId = customerSession.square_customer_id;
-      }
-
-      console.log('PAYMENT AMOUNT:', BigInt(Math.round(grandTotal * 100)));
-
-      if (payload.customerId) {
-        payment.customerId = payload.customerId;
-      }
-
-      if (payload.verificationToken) {
-        payment.verificationToken = payload.verificationToken;
-      }
-
-      const { payment: paymentResponse } =
-        await square.payments.create(payment);
-
-      logger.info('Payment succeeded!', { paymentResponse });
-
-      if (customerSession) {
-        try {
-          await updateCustomerProfile(customerSession, {
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            phone: payload.phone,
-            defaultAddress: payload.address,
-          });
-        } catch (err) {
-          console.error('REMEMBER CUSTOMER PROFILE ERROR:', err);
-        }
-      }
-
-      return send(res, 200, {
-        success: true,
-        orderNumber,
-        payment: {
-          id: paymentResponse.id,
-          status: paymentResponse.status,
-          receiptUrl: paymentResponse.receiptUrl,
-        },
-        status: 'PAID',
-        subtotal,
-        deliveryFee,
-        salesTax,
-        tipAmount,
         grandTotal,
-        items: (order.lineItems || []).map((item) => ({
-          name: item.name,
-          variationName: item.variationName,
-          quantity: item.quantity,
-        })),
+        items: (order.lineItems || []).map(
+          (item) =>
+            `${item.name || 'Item'}${item.variationName ? ` (${item.variationName})` : ''} x${item.quantity || 1}`,
+        ),
+        trackingUrl: process.env.PUBLIC_BASE_URL
+          ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
+          : '',
       });
-    } catch (ex) {
-      if (ex.errors) {
-        logger.error(ex.errors);
-        bail(ex);
-      } else {
-        logger.error(`Error creating payment on attempt ${attempt}: ${ex}`);
-        throw ex;
+    } catch (err) {
+      console.error('Power Automate notification failed:', err);
+    }
+
+    if (customerSession) {
+      try {
+        await updateCustomerProfile(customerSession, {
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          phone: payload.phone,
+          defaultAddress: payload.address,
+        });
+      } catch (err) {
+        console.error('REMEMBER CUSTOMER PROFILE ERROR:', err);
       }
     }
-  });
+
+    return send(res, 200, {
+      success: true,
+      orderNumber,
+      payment: {
+        id: paymentResponse.id,
+        status: paymentResponse.status,
+        receiptUrl: paymentResponse.receiptUrl,
+      },
+      status: 'PAID',
+      subtotal,
+      deliveryFee,
+      salesTax,
+      tipAmount,
+      grandTotal,
+      items: (order.lineItems || []).map((item) => ({
+        name: item.name,
+        variationName: item.variationName,
+        quantity: item.quantity,
+      })),
+    });
+  } catch (err) {
+    console.error('CARD PAYMENT ERROR:', err.errors || err.message);
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error:
+        err.errors?.[0]?.detail ||
+        err.message ||
+        'Unable to complete the payment.',
+    });
+  }
 }
 
 async function storeCard(req, res) {
@@ -452,10 +662,21 @@ async function createCashOrder(req, res) {
   const payload = await json(req);
   const customerSession = getSession(req);
 
+  if (!checkRateLimit(req, res, 'cash-order', 10, 15 * 60 * 1000)) return;
+
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
       success: false,
       error: 'Your cart is empty. Please add at least one item.',
+    });
+  }
+
+  const customerDetailsError = validateCheckoutCustomer(payload);
+
+  if (customerDetailsError) {
+    return send(res, 400, {
+      success: false,
+      error: customerDetailsError,
     });
   }
 
@@ -467,33 +688,25 @@ async function createCashOrder(req, res) {
       error: deliveryTimeError,
     });
   }
-  if (payload.lat && payload.lon) {
-    let check;
+  let deliveryCheck;
 
-    try {
-      check = await getDeliveryAreaResult(payload.lat, payload.lon);
-    } catch (err) {
-      return send(res, 502, {
-        success: false,
-        error: err.message || 'Unable to validate the delivery address.',
-      });
-    }
+  try {
+    deliveryCheck = await getDeliveryAreaResult(payload.lat, payload.lon);
+  } catch (err) {
+    return send(res, 502, {
+      success: false,
+      error: err.message || 'Unable to validate the delivery address.',
+    });
+  }
 
-    if (!check.allowed) {
-      return send(res, 400, {
-        success: false,
-        error: `Address is outside delivery area (${check.miles.toFixed(1)} miles).`,
-      });
-    }
+  if (!deliveryCheck.allowed) {
+    return send(res, 400, {
+      success: false,
+      error: `Address is outside delivery area (${deliveryCheck.miles.toFixed(1)} miles).`,
+    });
   }
 
   try {
-    logger.info('Creating cash order', payload);
-
-    console.log('STEP 1');
-    console.log('ITEMS RECEIVED:');
-    console.dir(payload.items, { depth: null });
-
     const response = await square.orders.create({
       idempotencyKey: payload.idempotencyKey,
       order: {
@@ -505,15 +718,9 @@ async function createCashOrder(req, res) {
       },
     });
 
-    console.log('STEP 2');
-    console.log('RESPONSE.ORDER');
-    console.dir(response.order, { depth: null });
-
     const order = response.result?.order || response.order;
 
     if (!order) {
-      console.error('NO ORDER RETURNED');
-      console.dir(response, { depth: null });
       return send(res, 500, {
         success: false,
         error: 'Square did not return an order',
@@ -526,16 +733,6 @@ async function createCashOrder(req, res) {
     const tipAmount =
       Math.round(subtotal * ((payload.tipPercent || 0) / 100) * 100) / 100;
     const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
-
-    console.log('SUBTOTAL:', subtotal);
-    console.log('DELIVERY:', deliveryFee);
-    console.log('TAX:', salesTax);
-    console.log('TIP:', tipAmount);
-    console.log('GRAND TOTAL:', grandTotal);
-
-    console.log('FINAL CASH ORDER:');
-    console.dir(order, { depth: null });
-    console.log('BEFORE saveOrder');
 
     const orderNumber = saveOrder({
       squareOrderId: order.id,
@@ -554,9 +751,6 @@ async function createCashOrder(req, res) {
       total: grandTotal,
     });
 
-    console.log('AFTER saveOrder');
-    console.log('ORDER NUMBER:', orderNumber);
-
     if (customerSession) {
       try {
         await updateCustomerProfile(customerSession, {
@@ -570,34 +764,30 @@ async function createCashOrder(req, res) {
       }
     }
 
-    // Send Power Automate notification
     try {
-      await fetch(process.env.POWER_AUTOMATE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderNumber: String(orderNumber),
-          firstName: payload.firstName,
-          lastName: payload.lastName,
-          email: payload.email,
-          phone: payload.phone,
-          address: payload.address,
-          deliveryTime: payload.deliveryTime,
-          paymentMethod: 'Cash',
-          subtotal,
-          deliveryFee,
-          salesTax,
-          tip: tipAmount,
-          grandTotal,
-          items: (order.lineItems || []).map(
-            (i) => `${i.name} (${i.variationName}) x${i.quantity}`,
-          ),
-          trackingUrl: process.env.PUBLIC_BASE_URL
-            ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
-            : '',
-        }),
+      await notifyPowerAutomate({
+        eventType: 'checkoutOrder',
+        orderNumber: String(orderNumber),
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phone: payload.phone,
+        address: payload.address,
+        deliveryTime: payload.deliveryTime,
+        paymentMethod: 'Cash',
+        subtotal,
+        deliveryFee,
+        salesTax,
+        tip: tipAmount,
+        grandTotal,
+        items: (order.lineItems || []).map(
+          (item) =>
+            `${item.name || 'Item'}${item.variationName ? ` (${item.variationName})` : ''} x${item.quantity || 1}`,
+        ),
+        trackingUrl: process.env.PUBLIC_BASE_URL
+          ? `${String(process.env.PUBLIC_BASE_URL).replace(/\/$/, '')}/track.html?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(payload.email || '')}`
+          : '',
       });
-      console.log('Power Automate notification sent');
     } catch (err) {
       console.error('Power Automate notification failed:', err);
     }
@@ -638,9 +828,15 @@ async function getCatalog(req, res) {
 }
 
 async function addressSearch(req, res) {
+  if (!checkRateLimit(req, res, 'address-search', 60, 60 * 1000)) return;
+
   try {
     const url = new URL(req.url, 'http://localhost');
-    const query = url.searchParams.get('q');
+    const query = String(url.searchParams.get('q') || '').trim();
+
+    if (query.length < 3 || query.length > 200) {
+      return send(res, 400, { error: 'Enter at least three characters.' });
+    }
 
     const response = await fetch(
       `https://atlas.microsoft.com/search/address/json` +
@@ -661,10 +857,21 @@ async function addressSearch(req, res) {
 }
 
 async function validateDeliveryAddress(req, res) {
+  if (!checkRateLimit(req, res, 'address-validation', 60, 60 * 1000)) return;
+
   try {
     const payload = await json(req);
+    const lat = Number(payload.lat);
+    const lon = Number(payload.lon);
 
-    const result = await getDeliveryAreaResult(payload.lat, payload.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return send(res, 400, {
+        allowed: false,
+        error: 'Valid address coordinates are required.',
+      });
+    }
+
+    const result = await getDeliveryAreaResult(lat, lon);
     return send(res, 200, result);
   } catch (err) {
     console.error(err);
@@ -737,6 +944,14 @@ async function serveStatic(req, res) {
   );
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (
+    String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https'
+  ) {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains',
+    );
+  }
   await staticHandler(req, res, { public: 'public' });
 }
 
@@ -1193,6 +1408,8 @@ async function removeCustomerCard(req, res) {
 }
 
 async function getAdminOrders(req, res) {
+  if (!requireAdmin(req, res)) return;
+
   try {
     const db = require('./database/db');
     const orders = db
@@ -1268,11 +1485,18 @@ async function getOrderStatus(req, res) {
 }
 
 async function updateOrderStatus(req, res) {
+  if (!requireAdmin(req, res)) return;
+
   try {
     const url = new URL(req.url, 'http://localhost');
     const parts = url.pathname.split('/');
     const id = parts[3];
     const { status } = await json(req);
+
+    if (!validOrderStatuses.has(status)) {
+      return send(res, 400, { success: false, error: 'Invalid order status.' });
+    }
+
     const db = require('./database/db');
     db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
     return send(res, 200, { success: true });
@@ -1282,29 +1506,58 @@ async function updateOrderStatus(req, res) {
   }
 }
 async function bulkUpdateStatus(req, res) {
+  if (!requireAdmin(req, res)) return;
+
   const { ids, status } = await json(req);
+  const orderIds = (ids || [])
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  if (!validOrderStatuses.has(status) || orderIds.length === 0) {
+    return send(res, 400, {
+      success: false,
+      error: 'Valid orders and status are required.',
+    });
+  }
 
   const db = require('./database/db');
-
   const stmt = db.prepare('UPDATE orders SET status = ? WHERE id = ?');
-
-  ids.forEach((id) => stmt.run(status, id));
+  const updateOrders = db.transaction((selectedIds) => {
+    selectedIds.forEach((id) => stmt.run(status, id));
+  });
+  updateOrders(orderIds);
 
   return send(res, 200, { success: true });
 }
 async function bulkDeleteOrders(req, res) {
+  if (!requireAdmin(req, res)) return;
+
   const { ids } = await json(req);
+  const orderIds = (ids || [])
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  if (orderIds.length === 0) {
+    return send(res, 400, {
+      success: false,
+      error: 'At least one valid order is required.',
+    });
+  }
 
   const db = require('./database/db');
-
   const stmt = db.prepare('DELETE FROM orders WHERE id = ?');
-
-  ids.forEach((id) => stmt.run(id));
+  const deleteOrders = db.transaction((selectedIds) => {
+    selectedIds.forEach((id) => stmt.run(id));
+  });
+  deleteOrders(orderIds);
 
   return send(res, 200, { success: true });
 }
 module.exports = router(
   post('/webhooks/square', squareWebhook),
+  post('/admin/login', loginAdmin),
+  post('/admin/logout', logoutAdmin),
+  get('/admin/session', getAdminSession),
   post('/auth/request-code', requestCustomerCode),
   post('/auth/verify-code', verifyCustomerCode),
   post('/auth/logout', logoutCustomer),
