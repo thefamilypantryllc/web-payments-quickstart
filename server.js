@@ -591,10 +591,11 @@ async function serveStatic(req, res) {
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://web.squarecdn.com https://atlas.microsoft.com",
-      "style-src 'self' 'unsafe-inline' https://atlas.microsoft.com",
+      "style-src 'self' 'unsafe-inline' https://web.squarecdn.com https://atlas.microsoft.com",
+      "style-src-elem 'self' 'unsafe-inline' https://web.squarecdn.com https://atlas.microsoft.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://atlas.microsoft.com https://*.atlas.microsoft.com",
+      "connect-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://*.ingest.sentry.io https://atlas.microsoft.com https://*.atlas.microsoft.com",
       "frame-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://applepay.cdn-apple.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
