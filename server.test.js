@@ -11,7 +11,7 @@ const main = require('.');
 // serveStatic
 const staticTests = [
   ['/', /Credit\/Debit Card/],
-  ['/index.html', /sandbox\.web\.squarecdn/],
+  ['/index.html', /https:\/\/web\.squarecdn\.com\/v1\/square\.js/],
   ['/favicon.ico', /.+/],
 ];
 
@@ -47,18 +47,18 @@ test('createPayment errors with invalid payload', async (t) => {
   }
 });
 
-// storeCard
-test('storeCard errors with invalid payload', async (t) => {
+// saved cards
+test('saved card endpoint requires a customer session', async (t) => {
   const service = micro(main);
   const url = await listen(service);
   try {
-    const res = await fetch(`${url}/card`, {
+    const res = await fetch(`${url}/account/cards/save`, {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ wrong: true }),
     });
     t.false(res.ok);
-    t.is(res.status, 400);
+    t.is(res.status, 401);
   } finally {
     service.close();
   }

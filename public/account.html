@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Account | The Family Pantry</title>
+    <style>
+      :root {
+        --ink: #202d24;
+        --muted: #647168;
+        --leaf: #387a4a;
+        --leaf-dark: #285c37;
+        --line: #d8e2d8;
+        --background: #eef8e9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--background);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px 16px 50px;
+      }
+      main {
+        margin: 0 auto;
+        max-width: 720px;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto 18px;
+        max-width: 470px;
+        width: 92%;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 14px 38px rgba(32, 45, 36, 0.1);
+        padding: 30px;
+      }
+      .heading {
+        align-items: flex-start;
+        display: flex;
+        gap: 18px;
+        justify-content: space-between;
+      }
+      h1 {
+        font-size: 25px;
+        margin: 0 0 5px;
+      }
+      .email {
+        color: var(--muted);
+        margin: 0;
+      }
+      button,
+      .link {
+        background: var(--leaf);
+        border: 1px solid var(--leaf);
+        border-radius: 7px;
+        color: #fff;
+        cursor: pointer;
+        display: inline-flex;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 750;
+        justify-content: center;
+        min-height: 40px;
+        padding: 9px 14px;
+        text-decoration: none;
+      }
+      .secondary {
+        background: #fff;
+        color: var(--leaf-dark);
+      }
+      .section {
+        border-top: 1px solid var(--line);
+        margin-top: 25px;
+        padding-top: 22px;
+      }
+      .section h2 {
+        font-size: 19px;
+        margin: 0 0 5px;
+      }
+      .section-copy {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 16px;
+      }
+      #cards {
+        display: grid;
+        gap: 10px;
+      }
+      .saved-card {
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        padding: 15px 16px;
+      }
+      .card-name {
+        font-weight: 750;
+      }
+      .card-expiry {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .remove {
+        background: #fff;
+        border-color: #dfb9b6;
+        color: #963d38;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+      .empty {
+        color: var(--muted);
+        padding: 16px 0;
+      }
+      @media (max-width: 560px) {
+        .card {
+          padding: 24px 18px;
+        }
+        .heading,
+        .saved-card {
+          align-items: stretch;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img
+        class="logo"
+        src="/family-pantry-logo-transparent.png?v=2"
+        alt="The Family Pantry"
+      />
+      <section class="card">
+        <div class="heading">
+          <div>
+            <h1>My Account</h1>
+            <p class="email" id="account-email"></p>
+          </div>
+          <button class="secondary" id="logout-button" type="button">
+            Sign Out
+          </button>
+        </div>
+
+        <div class="section">
+          <h2>Saved Payment Methods</h2>
+          <p class="section-copy">
+            Cards are securely stored by Square. The Family Pantry never
+            receives your full card number.
+          </p>
+          <div id="cards"><div class="empty">Loading saved cards...</div></div>
+        </div>
+
+        <div class="actions">
+          <a class="link" href="/">Go to Checkout</a>
+          <a class="link secondary" href="/track.html">Track an Order</a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const emailElement = document.getElementById('account-email');
+      const cardsElement = document.getElementById('cards');
+
+      async function loadAccount() {
+        const session = await fetch('/account/session').then((response) =>
+          response.json(),
+        );
+        if (!session.loggedIn) {
+          location.href = '/login.html?redirect=/account.html';
+          return;
+        }
+
+        emailElement.textContent = session.customer.email;
+        await loadCards();
+      }
+
+      async function loadCards() {
+        const response = await fetch('/account/cards');
+        const result = await response.json();
+
+        if (!response.ok) {
+          cardsElement.innerHTML = `<div class="empty">${result.error || 'Unable to load saved cards.'}</div>`;
+          return;
+        }
+
+        if (!result.cards.length) {
+          cardsElement.innerHTML =
+            '<div class="empty">No saved cards yet. You can save one during checkout.</div>';
+          return;
+        }
+
+        cardsElement.innerHTML = result.cards
+          .map(
+            (card) => `
+              <div class="saved-card">
+                <div>
+                  <div class="card-name">${card.brand} ending in ${card.last4}</div>
+                  <div class="card-expiry">Expires ${String(card.expMonth).padStart(2, '0')}/${card.expYear}</div>
+                </div>
+                <button class="remove" type="button" data-card-id="${card.id}">Remove</button>
+              </div>
+            `,
+          )
+          .join('');
+      }
+
+      cardsElement.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-card-id]');
+        if (!button) return;
+        if (!confirm('Remove this saved card from your account?')) return;
+
+        button.disabled = true;
+        const response = await fetch('/account/cards/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardId: button.dataset.cardId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          alert(result.error || 'Unable to remove this card.');
+          button.disabled = false;
+          return;
+        }
+        await loadCards();
+      });
+
+      document
+        .getElementById('logout-button')
+        .addEventListener('click', async () => {
+          await fetch('/auth/logout', { method: 'POST' });
+          location.href = '/';
+        });
+
+      loadAccount();
+    </script>
+  </body>
+</html>

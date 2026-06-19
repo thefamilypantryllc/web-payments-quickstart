@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Family Pantry Admin Page</title>
     <style>
       * {
@@ -466,14 +467,391 @@
           padding: 8px 10px;
         }
       }
+      .bulk-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .bulk-toolbar select {
+        min-width: 180px;
+        padding: 8px 12px;
+      }
+
+      .bulk-toolbar button {
+        padding: 8px 16px;
+      }
+      th:nth-child(2),
+      td:nth-child(2) {
+        min-width: 180px;
+        width: 180px;
+      }
+      .bulk-select-all {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 38px;
+      }
+
+      /* Family Pantry visual refresh */
+      :root {
+        --ink: #202d24;
+        --muted: #647168;
+        --leaf: #387a4a;
+        --leaf-dark: #285c37;
+        --leaf-soft: #e8f5e6;
+        --surface: #ffffff;
+        --line: #d8e2d8;
+        --background: #eef8e9;
+        --warning: #a85b16;
+      }
+
+      body {
+        background: var(--background);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      #login-screen {
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.75),
+            rgba(255, 255, 255, 0) 360px
+          ),
+          var(--background);
+      }
+
+      #login-screen > img {
+        margin-bottom: 18px;
+        max-width: 460px;
+        width: min(88vw, 460px);
+      }
+
+      .login-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 12px 34px rgba(32, 45, 36, 0.1);
+        max-width: 390px;
+        padding: 30px;
+      }
+
+      .login-card h2 {
+        color: var(--ink);
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+
+      .login-card input,
+      .controls input,
+      .controls select,
+      .bulk-toolbar select,
+      .status-select {
+        background: #fbfdfb;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--ink);
+        min-height: 42px;
+      }
+
+      .login-card input:focus,
+      .controls input:focus,
+      .controls select:focus,
+      .bulk-toolbar select:focus,
+      .status-select:focus {
+        border-color: var(--leaf);
+        box-shadow: 0 0 0 3px rgba(56, 122, 74, 0.14);
+        outline: none;
+      }
+
+      .login-card button,
+      .update-btn,
+      .bulk-toolbar button {
+        background: var(--leaf);
+        border: 0;
+        border-radius: 7px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 750;
+      }
+
+      .login-card button:hover,
+      .update-btn:hover,
+      .bulk-toolbar button:hover {
+        background: var(--leaf-dark);
+      }
+
+      .top-bar {
+        background: #202d24;
+        box-shadow: 0 2px 12px rgba(32, 45, 36, 0.18);
+        min-height: 72px;
+        padding: 10px 28px;
+      }
+
+      .top-bar img {
+        filter: brightness(0) invert(1);
+        height: 50px;
+        opacity: 0.94;
+        width: auto;
+      }
+
+      .logout-btn {
+        min-height: 36px;
+        padding: 7px 14px;
+      }
+
+      .dashboard-body {
+        max-width: 1500px;
+        padding: 26px 28px 44px;
+      }
+
+      .dashboard-heading {
+        margin-bottom: 20px;
+      }
+
+      .dashboard-heading h1 {
+        color: var(--ink);
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      .dashboard-heading p {
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      .stats-grid {
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card,
+      .controls,
+      .table-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 5px 18px rgba(32, 45, 36, 0.05);
+      }
+
+      .stat-card {
+        padding: 18px;
+        text-align: left;
+      }
+
+      .stat-label,
+      #order-count {
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      .stat-value {
+        color: var(--ink);
+        font-size: 26px;
+      }
+
+      .stat-value.green {
+        color: var(--leaf-dark);
+      }
+
+      .stat-value.orange {
+        color: var(--warning);
+      }
+
+      .controls {
+        margin-bottom: 16px;
+      }
+
+      .table-header {
+        border-bottom: 1px solid var(--line);
+        padding: 18px 20px;
+      }
+
+      .table-header h2,
+      .modal-header h2,
+      .modal-label,
+      .modal-section-title,
+      .modal-total {
+        color: var(--ink);
+      }
+
+      .bulk-toolbar {
+        background: #f8fbf7;
+        border-bottom: 1px solid var(--line);
+        margin: 0;
+        padding: 12px 20px;
+      }
+
+      .bulk-toolbar button {
+        min-height: 38px;
+        padding: 8px 16px;
+      }
+
+      input[type='checkbox'] {
+        accent-color: var(--leaf);
+      }
+
+      thead th {
+        background: #f1f6f0;
+        border-bottom: 1px solid var(--line);
+        color: var(--ink);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      tbody tr:hover {
+        background: #f5faf4;
+      }
+
+      tbody td {
+        color: #344238;
+      }
+
+      .badge,
+      .method-badge {
+        border-radius: 999px;
+        padding: 4px 9px;
+      }
+
+      .badge-paid,
+      .method-card {
+        background: var(--leaf-soft);
+        color: var(--leaf-dark);
+      }
+
+      .badge-delivered {
+        background: #e5f0f6;
+        color: #285b70;
+      }
+
+      .badge-received,
+      .badge-cash,
+      .method-cash {
+        background: #fff1df;
+        color: #8b4b11;
+      }
+
+      .badge-preparing {
+        background: #eee9f7;
+        color: #5f477e;
+      }
+
+      .badge-out-for-delivery {
+        background: #e5f0f6;
+        color: #285b70;
+      }
+
+      .badge-cancelled {
+        background: #f8e8e7;
+        color: #963d38;
+      }
+
+      #modal-overlay {
+        background: rgba(19, 30, 22, 0.62);
+        backdrop-filter: blur(3px);
+      }
+
+      .modal {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 20px 54px rgba(19, 30, 22, 0.24);
+      }
+
+      .modal-header,
+      .modal-section-title {
+        border-bottom-color: var(--line);
+      }
+
+      .modal-row {
+        border-bottom-color: #edf1ed;
+        gap: 20px;
+      }
+
+      .modal-row > span:last-child {
+        max-width: 65%;
+        text-align: right;
+      }
+
+      @media (max-width: 768px) {
+        .top-bar {
+          gap: 10px;
+          padding: 10px 16px;
+        }
+
+        .top-bar img {
+          height: 42px;
+          max-width: 52vw;
+          object-fit: contain;
+        }
+
+        .top-bar-right {
+          gap: 8px;
+        }
+
+        .top-bar span {
+          display: none;
+        }
+
+        .dashboard-body {
+          padding: 18px 14px 36px;
+        }
+
+        .controls > * {
+          flex: 1 1 100%;
+          width: 100%;
+        }
+
+        .bulk-toolbar {
+          align-items: stretch;
+          flex-wrap: wrap;
+        }
+
+        .bulk-select-all {
+          width: 100%;
+        }
+
+        .bulk-toolbar select {
+          flex: 1;
+          min-width: 160px;
+        }
+
+        .modal {
+          padding: 22px 18px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .stats-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .stat-card {
+          padding: 14px;
+        }
+
+        .stat-value {
+          font-size: 22px;
+        }
+      }
     </style>
   </head>
   <body>
     <!-- LOGIN -->
     <div id="login-screen">
-      <img src="/logo.png" alt="The Family Pantry" />
+      <img
+        src="/family-pantry-logo-transparent.png?v=2"
+        alt="The Family Pantry"
+      />
       <div class="login-card">
-        <h2>🌿 Admin Login</h2>
+        <h2>Admin Login</h2>
         <input
           type="password"
           id="password-input"
@@ -487,7 +865,10 @@
     <!-- DASHBOARD -->
     <div id="dashboard">
       <div class="top-bar">
-        <img src="/logo.png" alt="The Family Pantry" />
+        <img
+          src="/family-pantry-logo-transparent.png?v=2"
+          alt="The Family Pantry"
+        />
         <div class="top-bar-right">
           <span id="last-updated"></span>
           <button class="logout-btn" onclick="logout()">Sign Out</button>
@@ -495,6 +876,10 @@
       </div>
 
       <div class="dashboard-body">
+        <div class="dashboard-heading">
+          <h1>Order Dashboard</h1>
+          <p>Review orders, delivery details, payments, and status updates.</p>
+        </div>
         <!-- STATS -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -506,7 +891,7 @@
             <div class="stat-value green" id="stat-revenue">—</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Card Payments</div>
+            <div class="stat-label">Card &amp; Wallet</div>
             <div class="stat-value green" id="stat-card">—</div>
           </div>
           <div class="stat-card">
@@ -535,11 +920,16 @@
             <option value="">All Statuses</option>
             <option value="Paid">Paid</option>
             <option value="Received">Received</option>
+            <option value="Preparing">Preparing</option>
+            <option value="Out for Delivery">Out for Delivery</option>
             <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
           <select id="method-filter" onchange="filterOrders()">
             <option value="">All Payment Methods</option>
             <option value="Card">Card</option>
+            <option value="Apple Pay">Apple Pay</option>
+            <option value="Google Pay">Google Pay</option>
             <option value="Cash">Cash</option>
           </select>
           <select id="sort-filter" onchange="filterOrders()">
@@ -557,10 +947,33 @@
             <span id="order-count"></span>
           </div>
           <div style="overflow-x: auto">
+            <div class="bulk-toolbar">
+              <div class="bulk-select-all">
+                <input
+                  type="checkbox"
+                  id="header-select-all"
+                  onchange="toggleSelectAll()"
+                />
+                <span>Select All</span>
+              </div>
+
+              <select id="bulk-action">
+                <option value="">Choose Action...</option>
+                <option value="Delivered">Mark Delivered</option>
+                <option value="Preparing">Mark Preparing</option>
+                <option value="Out for Delivery">Mark Out for Delivery</option>
+                <option value="Cancelled">Mark Cancelled</option>
+                <option value="delete">Delete Orders</option>
+              </select>
+
+              <button onclick="applyBulkAction()">Apply</button>
+            </div>
+
             <table>
               <thead>
                 <tr>
-                  <th>Order #</th>
+                  <th style="width: 40px"></th>
+                  <th style="min-width: 180px">Order #</th>
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Phone</th>
@@ -574,13 +987,13 @@
                   <th>Square Order ID</th>
                 </tr>
               </thead>
+
               <tbody id="orders-tbody"></tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
-
     <!-- ORDER DETAIL MODAL -->
     <div id="modal-overlay" onclick="closeModal(event)">
       <div class="modal">
@@ -641,6 +1054,8 @@
         <select class="status-select" id="modal-status-select">
           <option value="Received">Received</option>
           <option value="Paid">Paid</option>
+          <option value="Preparing">Preparing</option>
+          <option value="Out for Delivery">Out for Delivery</option>
           <option value="Delivered">Delivered</option>
           <option value="Cancelled">Cancelled</option>
         </select>
@@ -694,14 +1109,14 @@
       function renderStats() {
         const total = allOrders.length;
         const revenue = allOrders.reduce((s, o) => s + o.total, 0);
-        const card = allOrders.filter(
-          (o) => o.payment_method === 'Card',
+        const card = allOrders.filter((o) =>
+          ['Card', 'Apple Pay', 'Google Pay'].includes(o.payment_method),
         ).length;
         const cash = allOrders.filter(
           (o) => o.payment_method === 'Cash',
         ).length;
         const pending = allOrders.filter(
-          (o) => o.status === 'Received' || o.status === 'Recieved',
+          (o) => !['Delivered', 'Cancelled'].includes(o.status),
         ).length;
         const delivered = allOrders.filter(
           (o) => o.status === 'Delivered',
@@ -773,10 +1188,16 @@
                 ? 'badge-paid'
                 : o.status === 'Delivered'
                   ? 'badge-delivered'
-                  : 'badge-received';
+                  : o.status === 'Preparing'
+                    ? 'badge-preparing'
+                    : o.status === 'Out for Delivery'
+                      ? 'badge-out-for-delivery'
+                      : o.status === 'Cancelled'
+                        ? 'badge-cancelled'
+                        : 'badge-received';
 
             const methodClass =
-              o.payment_method === 'Card' ? 'method-card' : 'method-cash';
+              o.payment_method === 'Cash' ? 'method-cash' : 'method-card';
 
             const deliveryDate = o.delivery_time
               ? new Date(o.delivery_time).toLocaleDateString('en-US', {
@@ -797,19 +1218,30 @@
               o.status === 'Recieved' ? 'Received' : o.status;
 
             return `<tr onclick="openModal(${o.id})">
-            <td><strong>${o.order_number || '—'}</strong></td>
-            <td>${createdDate}</td>
-            <td>${o.customer_name || '—'}</td>
-            <td>${o.phone || '—'}</td>
-            <td>${deliveryDate}</td>
-            <td><span class="method-badge ${methodClass}">${o.payment_method}</span></td>
-            <td><span class="badge ${statusClass}">${displayStatus}</span></td>
-            <td>$${Number(o.subtotal).toFixed(2)}</td>
-            <td>$${Number(o.sales_tax).toFixed(2)}</td>
-            <td>$${Number(o.tip).toFixed(2)}</td>
-            <td><strong>$${Number(o.total).toFixed(2)}</strong></td>
-            <td style="font-size:11px;color:#888;">${(o.square_order_id || '').substring(0, 16)}...</td>
-          </tr>`;
+  <td>
+    <input
+      type="checkbox"
+      class="order-checkbox"
+      value="${o.id}"
+      onclick="event.stopPropagation()"
+    >
+  </td>
+
+  <td><strong>${o.order_number || '—'}</strong></td>
+  <td>${createdDate}</td>
+  <td>${o.customer_name || '—'}</td>
+  <td>${o.phone || '—'}</td>
+  <td>${deliveryDate}</td>
+  <td><span class="method-badge ${methodClass}">${o.payment_method}</span></td>
+  <td><span class="badge ${statusClass}">${displayStatus}</span></td>
+  <td>$${Number(o.subtotal).toFixed(2)}</td>
+  <td>$${Number(o.sales_tax).toFixed(2)}</td>
+  <td>$${Number(o.tip).toFixed(2)}</td>
+  <td><strong>$${Number(o.total).toFixed(2)}</strong></td>
+  <td style="font-size:11px;color:#888;">
+    ${(o.square_order_id || '').substring(0, 16)}...
+  </td>
+</tr>`;
           })
           .join('');
       }
@@ -865,7 +1297,60 @@
         document.getElementById('modal-overlay').classList.remove('active');
         currentOrderId = null;
       }
+      function getSelectedOrders() {
+        return [...document.querySelectorAll('.order-checkbox:checked')].map(
+          (cb) => Number(cb.value),
+        );
+      }
+      function toggleSelectAll() {
+        const checked = document.getElementById('header-select-all').checked;
 
+        document
+          .querySelectorAll('.order-checkbox')
+          .forEach((cb) => (cb.checked = checked));
+      }
+      async function applyBulkAction() {
+        const ids = getSelectedOrders();
+
+        if (!ids.length) {
+          alert('Select at least one order.');
+          return;
+        }
+
+        const action = document.getElementById('bulk-action').value;
+
+        if (!action) {
+          alert('Choose an action.');
+          return;
+        }
+
+        if (action === 'delete') {
+          if (!confirm(`Delete ${ids.length} selected orders?`)) {
+            return;
+          }
+
+          await fetch('/admin/orders/bulk-delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids }),
+          });
+        } else {
+          await fetch('/admin/orders/bulk-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ids,
+              status: action,
+            }),
+          });
+        }
+
+        await loadOrders();
+      }
       async function updateStatus() {
         if (!currentOrderId) return;
         const newStatus = document.getElementById('modal-status-select').value;

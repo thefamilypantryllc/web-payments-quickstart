@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Track Your Order | The Family Pantry</title>
+    <style>
+      :root {
+        --ink: #202d24;
+        --muted: #647168;
+        --leaf: #387a4a;
+        --leaf-dark: #285c37;
+        --leaf-soft: #e8f5e6;
+        --surface: #ffffff;
+        --line: #d8e2d8;
+        --background: #eef8e9;
+        --danger: #a33a35;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.75),
+            rgba(255, 255, 255, 0) 360px
+          ),
+          var(--background);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        padding: 26px 18px 50px;
+      }
+
+      .page {
+        margin: 0 auto;
+        max-width: 720px;
+      }
+
+      .brand-logo {
+        display: block;
+        margin: 0 auto 18px;
+        max-width: 500px;
+        width: min(92vw, 500px);
+      }
+
+      .tracking-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 14px 38px rgba(32, 45, 36, 0.1);
+        padding: 32px;
+      }
+
+      .page-heading {
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 24px;
+        padding-bottom: 22px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 27px;
+        margin: 0 0 7px;
+      }
+
+      .page-heading p,
+      .lookup-help {
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      .lookup-form {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      label {
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      input {
+        background: #fbfdfb;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--ink);
+        font: inherit;
+        min-height: 46px;
+        padding: 11px 12px;
+        width: 100%;
+      }
+
+      input:focus {
+        border-color: var(--leaf);
+        box-shadow: 0 0 0 3px rgba(56, 122, 74, 0.14);
+        outline: none;
+      }
+
+      .track-button,
+      .menu-link {
+        align-items: center;
+        background: var(--leaf);
+        border: 1px solid var(--leaf);
+        border-radius: 7px;
+        color: #fff;
+        cursor: pointer;
+        display: inline-flex;
+        font: inherit;
+        font-weight: 750;
+        justify-content: center;
+        min-height: 46px;
+        padding: 10px 18px;
+        text-decoration: none;
+      }
+
+      .track-button {
+        grid-column: 1 / -1;
+      }
+
+      .track-button:hover,
+      .menu-link:hover {
+        background: var(--leaf-dark);
+      }
+
+      .track-button:disabled {
+        background: #aebbb0;
+        border-color: #aebbb0;
+        cursor: wait;
+      }
+
+      .lookup-help {
+        font-size: 13px;
+        margin-top: 12px;
+        text-align: center;
+      }
+
+      #error-message {
+        background: #fbeceb;
+        border: 1px solid #edcbc8;
+        border-radius: 7px;
+        color: var(--danger);
+        display: none;
+        font-size: 14px;
+        margin-top: 18px;
+        padding: 12px 14px;
+        text-align: center;
+      }
+
+      #tracking-result {
+        display: none;
+        margin-top: 30px;
+      }
+
+      .order-heading {
+        align-items: flex-start;
+        display: flex;
+        gap: 18px;
+        justify-content: space-between;
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+      }
+
+      #result-order-number {
+        font-size: 20px;
+        font-weight: 850;
+        overflow-wrap: anywhere;
+      }
+
+      .status-badge {
+        background: var(--leaf-soft);
+        border-radius: 999px;
+        color: var(--leaf-dark);
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 7px 11px;
+      }
+
+      .status-badge.cancelled {
+        background: #f8e8e7;
+        color: var(--danger);
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin: 0 0 30px;
+      }
+
+      .step {
+        color: var(--muted);
+        position: relative;
+        text-align: center;
+      }
+
+      .step::before {
+        background: var(--line);
+        content: '';
+        height: 3px;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 14px;
+      }
+
+      .step:first-child::before {
+        left: 50%;
+      }
+
+      .step:last-child::before {
+        right: 50%;
+      }
+
+      .step-dot {
+        align-items: center;
+        background: #fff;
+        border: 3px solid var(--line);
+        border-radius: 50%;
+        display: inline-flex;
+        font-size: 12px;
+        font-weight: 850;
+        height: 30px;
+        justify-content: center;
+        position: relative;
+        width: 30px;
+        z-index: 1;
+      }
+
+      .step-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.3;
+        margin-top: 8px;
+      }
+
+      .step.complete::before,
+      .step.active::before {
+        background: var(--leaf);
+      }
+
+      .step.complete .step-dot,
+      .step.active .step-dot {
+        background: var(--leaf);
+        border-color: var(--leaf);
+        color: #fff;
+      }
+
+      .step.active .step-label {
+        color: var(--ink);
+      }
+
+      .order-details {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: hidden;
+      }
+
+      .detail {
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 4px;
+        padding: 15px 17px;
+      }
+
+      .detail:nth-child(odd) {
+        border-right: 1px solid var(--line);
+      }
+
+      .detail:nth-last-child(-n + 2) {
+        border-bottom: 0;
+      }
+
+      .detail-label {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+        text-transform: uppercase;
+      }
+
+      .detail-value {
+        line-height: 1.4;
+      }
+
+      .result-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 22px;
+      }
+
+      .menu-link {
+        background: #fff;
+        color: var(--leaf-dark);
+        min-width: 170px;
+      }
+
+      @media (max-width: 580px) {
+        body {
+          padding: 18px 12px 36px;
+        }
+
+        .tracking-card {
+          padding: 24px 18px;
+        }
+
+        .lookup-form,
+        .order-details {
+          grid-template-columns: 1fr;
+        }
+
+        .track-button {
+          grid-column: auto;
+        }
+
+        .detail,
+        .detail:nth-child(odd),
+        .detail:nth-last-child(-n + 2) {
+          border-bottom: 1px solid var(--line);
+          border-right: 0;
+        }
+
+        .detail:last-child {
+          border-bottom: 0;
+        }
+
+        .step-label {
+          font-size: 10px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <img
+        class="brand-logo"
+        src="/family-pantry-logo-transparent.png?v=2"
+        alt="The Family Pantry"
+      />
+
+      <section class="tracking-card">
+        <header class="page-heading">
+          <h1>Track Your Order</h1>
+          <p>Enter the details used at checkout for the latest status.</p>
+        </header>
+
+        <form class="lookup-form" id="tracking-form">
+          <div class="field">
+            <label for="order-number">Order Number</label>
+            <input
+              id="order-number"
+              name="orderNumber"
+              type="text"
+              autocomplete="off"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="order-email">Email Address</label>
+            <input
+              id="order-email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+            />
+          </div>
+          <button class="track-button" id="track-button" type="submit">
+            Check Order Status
+          </button>
+        </form>
+        <p class="lookup-help">
+          Your order number appears on the confirmation page and receipt.
+        </p>
+
+        <div id="error-message" role="alert"></div>
+
+        <section id="tracking-result" aria-live="polite">
+          <div class="order-heading">
+            <div>
+              <div class="eyebrow">Order</div>
+              <div id="result-order-number"></div>
+            </div>
+            <span class="status-badge" id="result-status"></span>
+          </div>
+
+          <div class="timeline" id="timeline">
+            <div class="step" data-status="received">
+              <span class="step-dot">1</span>
+              <span class="step-label">Order Received</span>
+            </div>
+            <div class="step" data-status="preparing">
+              <span class="step-dot">2</span>
+              <span class="step-label">Preparing</span>
+            </div>
+            <div class="step" data-status="out">
+              <span class="step-dot">3</span>
+              <span class="step-label">Out for Delivery</span>
+            </div>
+            <div class="step" data-status="delivered">
+              <span class="step-dot">4</span>
+              <span class="step-label">Delivered</span>
+            </div>
+          </div>
+
+          <div class="order-details">
+            <div class="detail">
+              <span class="detail-label">Customer</span>
+              <span class="detail-value" id="result-customer"></span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Order Placed</span>
+              <span class="detail-value" id="result-created"></span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Expected Delivery</span>
+              <span class="detail-value" id="result-delivery"></span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Payment</span>
+              <span class="detail-value" id="result-payment"></span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Order Total</span>
+              <span class="detail-value" id="result-total"></span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Current Status</span>
+              <span class="detail-value" id="result-status-detail"></span>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <a class="menu-link" href="/menu.html">Return to Menu</a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('tracking-form');
+      const orderNumberInput = document.getElementById('order-number');
+      const emailInput = document.getElementById('order-email');
+      const trackButton = document.getElementById('track-button');
+      const errorMessage = document.getElementById('error-message');
+      const trackingResult = document.getElementById('tracking-result');
+
+      function formatDate(value, includeTime = false) {
+        if (!value) return 'Not available';
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Not available';
+
+        return date.toLocaleString('en-US', {
+          weekday: includeTime ? 'long' : undefined,
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: includeTime ? 'numeric' : undefined,
+          minute: includeTime ? '2-digit' : undefined,
+        });
+      }
+
+      function getStatusIndex(status) {
+        const normalized = String(status || '').toLowerCase();
+
+        if (normalized === 'delivered') return 3;
+        if (normalized === 'out for delivery') return 2;
+        if (normalized === 'preparing') return 1;
+        return 0;
+      }
+
+      function renderTimeline(status) {
+        const steps = [...document.querySelectorAll('.step')];
+        const cancelled = String(status).toLowerCase() === 'cancelled';
+        const currentIndex = getStatusIndex(status);
+
+        steps.forEach((step, index) => {
+          step.classList.remove('active', 'complete');
+
+          if (cancelled) return;
+          if (index < currentIndex) step.classList.add('complete');
+          if (index === currentIndex) step.classList.add('active');
+        });
+      }
+
+      function renderOrder(order) {
+        const status = order.status || 'Received';
+        const statusBadge = document.getElementById('result-status');
+
+        document.getElementById('result-order-number').textContent =
+          order.orderNumber;
+        document.getElementById('result-customer').textContent =
+          order.customerName || 'Customer';
+        document.getElementById('result-created').textContent = formatDate(
+          order.createdAt,
+        );
+        document.getElementById('result-delivery').textContent = formatDate(
+          order.deliveryTime,
+          true,
+        );
+        document.getElementById('result-payment').textContent =
+          order.paymentMethod || 'Not available';
+        document.getElementById('result-total').textContent =
+          '$' + Number(order.total || 0).toFixed(2);
+        document.getElementById('result-status-detail').textContent = status;
+
+        statusBadge.textContent = status;
+        statusBadge.classList.toggle(
+          'cancelled',
+          status.toLowerCase() === 'cancelled',
+        );
+
+        renderTimeline(status);
+        trackingResult.style.display = 'block';
+      }
+
+      async function lookupOrder() {
+        errorMessage.style.display = 'none';
+        trackingResult.style.display = 'none';
+        trackButton.disabled = true;
+        trackButton.textContent = 'Checking...';
+
+        try {
+          const response = await fetch('/order-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderNumber: orderNumberInput.value,
+              email: emailInput.value,
+            }),
+          });
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Unable to find this order.');
+          }
+
+          renderOrder(result.order);
+        } catch (error) {
+          errorMessage.textContent =
+            error.message || 'Order tracking is temporarily unavailable.';
+          errorMessage.style.display = 'block';
+        } finally {
+          trackButton.disabled = false;
+          trackButton.textContent = 'Check Order Status';
+        }
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        lookupOrder();
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      orderNumberInput.value = params.get('orderNumber') || '';
+      emailInput.value = params.get('email') || '';
+
+      if (orderNumberInput.value && emailInput.value) {
+        lookupOrder();
+      }
+    </script>
+  </body>
+</html>

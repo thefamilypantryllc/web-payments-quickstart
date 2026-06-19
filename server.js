@@ -1,6 +1,4 @@
 require('dotenv').config();
-// micro provides http helpers
-const { createError, json, send } = require('micro');
 // microrouter provides http server routing
 const { router, get, post } = require('microrouter');
 // serve-handler serves static assets
@@ -10,13 +8,19 @@ const retry = require('async-retry');
 
 // logger gives us insight into what's happening
 const logger = require('./server/logger');
-// schema validates incoming requests
-const { validateCreateCardPayload } = require('./server/schema');
 // square provides the API client and error types
 const { client: square } = require('./server/square');
 
 require('./database/init');
 const saveOrder = require('./database/saveOrder');
+const {
+  clearSessionCookie,
+  getSession,
+  requestLoginCode,
+  requireSession,
+  setSessionCookie,
+  verifyLoginCode,
+} = require('./customer-auth');
 
 const fs = require('fs');
 const path = require('path');
@@ -31,8 +35,30 @@ async function adminPage(req, res) {
 
   return send(res, 200, html);
 }
+
+function validateDeliveryTime(deliveryTime) {
+  if (!deliveryTime) {
+    return 'Please choose a delivery time.';
+  }
+
+  const selectedTime = new Date(deliveryTime);
+
+  if (Number.isNaN(selectedTime.getTime())) {
+    return 'Please choose a valid delivery time.';
+  }
+
+  const minimumDeliveryTime = Date.now() + 24 * 60 * 60 * 1000;
+
+  if (selectedTime.getTime() < minimumDeliveryTime) {
+    return 'Delivery time must be at least 24 hours from now.';
+  }
+
+  return null;
+}
+
 async function createPayment(req, res) {
   const payload = await json(req);
+  const customerSession = getSession(req);
 
   if (!payload.items || payload.items.length === 0) {
     return send(res, 400, {
@@ -41,6 +67,14 @@ async function createPayment(req, res) {
     });
   }
 
+  const deliveryTimeError = validateDeliveryTime(payload.deliveryTime);
+
+  if (deliveryTimeError) {
+    return send(res, 400, {
+      success: false,
+      error: deliveryTimeError,
+    });
+  }
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -59,6 +93,35 @@ async function createPayment(req, res) {
         error: `Address is outside delivery area (${check.miles.toFixed(1)} miles).`,
       });
     }
+  }
+
+  let paymentSourceId = payload.sourceId;
+
+  if (payload.savedCardId) {
+    if (!customerSession) {
+      return send(res, 401, {
+        success: false,
+        error: 'Please sign in again to use a saved card.',
+      });
+    }
+
+    const cardResponse = await square.cards.get({
+      cardId: payload.savedCardId,
+    });
+    const savedCard = cardResponse.card || cardResponse.result?.card;
+
+    if (
+      !savedCard ||
+      savedCard.customerId !== customerSession.square_customer_id ||
+      savedCard.enabled === false
+    ) {
+      return send(res, 403, {
+        success: false,
+        error: 'That saved card is not available for this account.',
+      });
+    }
+
+    paymentSourceId = savedCard.id;
   }
 
   console.log('CARD PAYMENT PAYLOAD:');
@@ -91,6 +154,11 @@ async function createPayment(req, res) {
       const salesTax = subtotal * 0.08225;
       const tipAmount = subtotal * ((payload.tipPercent || 0) / 100);
       const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+      const paymentMethod = ['Apple Pay', 'Google Pay'].includes(
+        payload.paymentMethod,
+      )
+        ? payload.paymentMethod
+        : 'Card';
 
       console.log('CARD ORDER CREATED:');
       console.dir(order, { depth: null });
@@ -103,7 +171,7 @@ async function createPayment(req, res) {
         email: payload.email,
         address: payload.address,
         deliveryTime: payload.deliveryTime,
-        paymentMethod: 'Card',
+        paymentMethod,
         status: 'Paid',
         subtotal,
         deliveryFee,
@@ -128,7 +196,7 @@ async function createPayment(req, res) {
             phone: payload.phone,
             address: payload.address,
             deliveryTime: payload.deliveryTime,
-            paymentMethod: 'Card',
+            paymentMethod,
             subtotal,
             deliveryFee,
             salesTax,
@@ -147,12 +215,16 @@ async function createPayment(req, res) {
       const payment = {
         idempotencyKey: payload.idempotencyKey,
         locationId: payload.locationId,
-        sourceId: payload.sourceId,
+        sourceId: paymentSourceId,
         amountMoney: {
           amount: BigInt(Math.round(grandTotal * 100)),
           currency: 'USD',
         },
       };
+
+      if (customerSession?.square_customer_id) {
+        payment.customerId = customerSession.square_customer_id;
+      }
 
       console.log('PAYMENT AMOUNT:', BigInt(Math.round(grandTotal * 100)));
 
@@ -202,50 +274,37 @@ async function createPayment(req, res) {
 }
 
 async function storeCard(req, res) {
-  const payload = await json(req);
+  try {
+    const customer = requireSession(req);
+    const payload = await json(req);
 
-  if (!validateCreateCardPayload(payload)) {
-    throw createError(400, 'Bad Request');
-  }
-
-  await retry(async (bail, attempt) => {
-    try {
-      logger.debug('Storing card', { attempt });
-
-      const cardReq = {
-        idempotencyKey: payload.idempotencyKey,
-        sourceId: payload.sourceId,
-        card: { customerId: payload.customerId },
-      };
-
-      if (payload.verificationToken) {
-        cardReq.verificationToken = payload.verificationToken;
-      }
-
-      const { result, statusCode } = await square.cardsApi.createCard(cardReq);
-
-      logger.info('Store Card succeeded!', { result, statusCode });
-
-      result.card.expMonth = result.card.expMonth.toString();
-      result.card.expYear = result.card.expYear.toString();
-      result.card.version = result.card.version.toString();
-
-      send(res, statusCode, {
-        success: true,
-        card: result.card,
+    if (!payload.sourceId || payload.consent !== true) {
+      return send(res, 400, {
+        success: false,
+        error: 'Card-saving consent and a valid payment token are required.',
       });
-    } catch (ex) {
-      if (ex.errors) {
-        logger.error(ex.errors);
-        bail(ex);
-      } else {
-        logger.error(
-          `Error creating card-on-file on attempt ${attempt}: ${ex}`,
-        );
-        throw ex;
-      }
     }
-  });
+
+    const response = await square.cards.create({
+      idempotencyKey: crypto.randomUUID(),
+      sourceId: payload.sourceId,
+      card: {
+        customerId: customer.square_customer_id,
+      },
+    });
+    const card = response.card || response.result?.card;
+
+    return send(res, 200, {
+      success: true,
+      card: serializeCard(card),
+    });
+  } catch (err) {
+    console.error('STORE CARD ERROR:', err);
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to save this card.',
+    });
+  }
 }
 
 async function createCashOrder(req, res) {
@@ -258,6 +317,14 @@ async function createCashOrder(req, res) {
     });
   }
 
+  const deliveryTimeError = validateDeliveryTime(payload.deliveryTime);
+
+  if (deliveryTimeError) {
+    return send(res, 400, {
+      success: false,
+      error: deliveryTimeError,
+    });
+  }
   if (payload.lat && payload.lon) {
     const validationResponse = await fetch(
       'http://localhost:3000/validate-address',
@@ -336,7 +403,7 @@ async function createCashOrder(req, res) {
       address: payload.address,
       deliveryTime: payload.deliveryTime,
       paymentMethod: 'Cash',
-      status: 'Recieved',
+      status: 'Received',
       subtotal,
       deliveryFee,
       salesTax,
@@ -501,8 +568,175 @@ async function cartSummary(req, res) {
 
 async function serveStatic(req, res) {
   logger.debug('Handling request', req.path);
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://web.squarecdn.com https://atlas.microsoft.com",
+      "style-src 'self' 'unsafe-inline' https://atlas.microsoft.com",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://pci-connect.squareup.com https://*.squareup.com https://*.squarecdn.com https://atlas.microsoft.com https://*.atlas.microsoft.com",
+      "frame-src 'self' https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://applepay.cdn-apple.com",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
+  );
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   await staticHandler(req, res, { public: 'public' });
 }
+
+async function getSquareConfig(req, res) {
+  const applicationId = process.env.SQUARE_APPLICATION_ID;
+  const locationId = process.env.SQUARE_LOCATION_ID;
+
+  if (!applicationId || !locationId) {
+    return send(res, 500, {
+      success: false,
+      error: 'Square production configuration is incomplete.',
+    });
+  }
+
+  return send(res, 200, {
+    success: true,
+    applicationId,
+    locationId,
+    environment:
+      String(process.env.SQUARE_ENVIRONMENT).toLowerCase() === 'sandbox'
+        ? 'sandbox'
+        : 'production',
+  });
+}
+
+function serializeCard(card) {
+  if (!card) return null;
+
+  return {
+    id: card.id,
+    brand: card.cardBrand || 'Card',
+    last4: card.last4,
+    expMonth: Number(card.expMonth),
+    expYear: Number(card.expYear),
+  };
+}
+
+async function requestCustomerCode(req, res) {
+  try {
+    const { email } = await json(req);
+    await requestLoginCode(email);
+    return send(res, 200, {
+      success: true,
+      message: 'Check your email for a six-digit sign-in code.',
+    });
+  } catch (err) {
+    console.error('REQUEST LOGIN CODE ERROR:', err);
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error:
+        err.statusCode && err.statusCode < 500
+          ? err.message
+          : 'Email sign-in is temporarily unavailable.',
+    });
+  }
+}
+
+async function verifyCustomerCode(req, res) {
+  try {
+    const { email, code } = await json(req);
+    const result = await verifyLoginCode(email, code);
+    setSessionCookie(req, res, result.token);
+    return send(res, 200, {
+      success: true,
+      customer: {
+        email: result.customer.email,
+      },
+    });
+  } catch (err) {
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to verify this code.',
+    });
+  }
+}
+
+async function getCustomerSession(req, res) {
+  const customer = getSession(req);
+
+  if (!customer) {
+    return send(res, 200, { loggedIn: false });
+  }
+
+  return send(res, 200, {
+    loggedIn: true,
+    customer: {
+      email: customer.email,
+    },
+  });
+}
+
+async function logoutCustomer(req, res) {
+  const customer = getSession(req);
+
+  if (customer) {
+    const db = require('./database/db');
+    db.prepare('DELETE FROM customer_sessions WHERE id = ?').run(
+      customer.session_id,
+    );
+  }
+
+  clearSessionCookie(res);
+  return send(res, 200, { success: true });
+}
+
+async function listCustomerCards(req, res) {
+  try {
+    const customer = requireSession(req);
+    const page = await square.cards.list({
+      customerId: customer.square_customer_id,
+      includeDisabled: false,
+    });
+    const cards = [];
+
+    for await (const card of page) {
+      if (card.enabled !== false) cards.push(serializeCard(card));
+    }
+
+    return send(res, 200, { success: true, cards });
+  } catch (err) {
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to load saved cards.',
+    });
+  }
+}
+
+async function removeCustomerCard(req, res) {
+  try {
+    const customer = requireSession(req);
+    const { cardId } = await json(req);
+    const response = await square.cards.get({ cardId });
+    const card = response.card || response.result?.card;
+
+    if (!card || card.customerId !== customer.square_customer_id) {
+      return send(res, 404, {
+        success: false,
+        error: 'Saved card not found.',
+      });
+    }
+
+    await square.cards.disable({ cardId });
+    return send(res, 200, { success: true });
+  } catch (err) {
+    return send(res, err.statusCode || 500, {
+      success: false,
+      error: err.message || 'Unable to remove this card.',
+    });
+  }
+}
+
 async function getAdminOrders(req, res) {
   try {
     const db = require('./database/db');
@@ -513,6 +747,68 @@ async function getAdminOrders(req, res) {
   } catch (err) {
     console.error('ADMIN ORDERS ERROR:', err);
     return send(res, 500, { error: err.message });
+  }
+}
+
+async function getOrderStatus(req, res) {
+  try {
+    const payload = await json(req);
+    const orderNumber = String(payload.orderNumber || '').trim();
+    const email = String(payload.email || '')
+      .trim()
+      .toLowerCase();
+
+    if (!orderNumber || !email) {
+      return send(res, 400, {
+        success: false,
+        error: 'Please enter your order number and email address.',
+      });
+    }
+
+    const db = require('./database/db');
+    const order = db
+      .prepare(
+        `
+          SELECT
+            order_number,
+            customer_name,
+            delivery_time,
+            payment_method,
+            status,
+            total,
+            created_at
+          FROM orders
+          WHERE LOWER(order_number) = LOWER(?)
+            AND LOWER(email) = ?
+        `,
+      )
+      .get(orderNumber, email);
+
+    if (!order) {
+      return send(res, 404, {
+        success: false,
+        error: 'We could not find an order matching those details.',
+      });
+    }
+
+    return send(res, 200, {
+      success: true,
+      order: {
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        deliveryTime: order.delivery_time,
+        paymentMethod: order.payment_method,
+        status: order.status === 'Recieved' ? 'Received' : order.status,
+        total: Number(order.total || 0),
+        createdAt: order.created_at,
+      },
+    });
+  } catch (err) {
+    console.error('ORDER STATUS ERROR:', err);
+    return send(res, 500, {
+      success: false,
+      error: 'Order tracking is temporarily unavailable.',
+    });
   }
 }
 
@@ -530,10 +826,42 @@ async function updateOrderStatus(req, res) {
     return send(res, 500, { error: err.message });
   }
 }
+async function bulkUpdateStatus(req, res) {
+  const { ids, status } = await json(req);
+
+  const db = require('./database/db');
+
+  const stmt = db.prepare('UPDATE orders SET status = ? WHERE id = ?');
+
+  ids.forEach((id) => stmt.run(status, id));
+
+  return send(res, 200, { success: true });
+}
+async function bulkDeleteOrders(req, res) {
+  const { ids } = await json(req);
+
+  const db = require('./database/db');
+
+  const stmt = db.prepare('DELETE FROM orders WHERE id = ?');
+
+  ids.forEach((id) => stmt.run(id));
+
+  return send(res, 200, { success: true });
+}
 module.exports = router(
+  post('/auth/request-code', requestCustomerCode),
+  post('/auth/verify-code', verifyCustomerCode),
+  post('/auth/logout', logoutCustomer),
+  get('/account/session', getCustomerSession),
+  get('/account/cards', listCustomerCards),
+  get('/square-config', getSquareConfig),
+  post('/account/cards/save', storeCard),
+  post('/account/cards/remove', removeCustomerCard),
+  post('/admin/orders/bulk-status', bulkUpdateStatus),
+  post('/admin/orders/bulk-delete', bulkDeleteOrders),
   post('/payment', createPayment),
-  post('/card', storeCard),
   post('/cash', createCashOrder),
+  post('/order-status', getOrderStatus),
   get('/admin/orders', getAdminOrders),
   get('/admin', adminPage),
   post('/admin/orders/:id/status', updateOrderStatus),

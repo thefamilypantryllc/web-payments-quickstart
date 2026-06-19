@@ -1,4 +1,4 @@
-<script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+<script src="https://web.squarecdn.com/v1/square.js"></script>
 
 <link
   rel="stylesheet"
@@ -6,33 +6,87 @@
 />
 
 <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
-<title>Payment Form</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checkout | The Family Pantry</title>
 <body>
   <!-- Active Form View Wrapper -->
-  <div style="text-align: center; padding: 20px 0 0 0">
+  <header class="checkout-header">
     <img
-      src="/logo.png"
+      src="/family-pantry-logo-transparent.png?v=2"
       alt="The Family Pantry"
-      style="max-width: 400px; width: 90%"
+      class="checkout-logo"
     />
-  </div>
+    <p>Farm-Raised &bull; Garden-Fresh &bull; Fresh-Baked</p>
+    <div class="account-links">
+      <a id="account-sign-in" href="/login.html?redirect=/">Customer Sign In</a>
+      <a id="account-manage" href="/account.html" hidden>My Account</a>
+    </div>
+  </header>
   <div class="form-wrapper">
     <div class="left-column">
       <div class="checkout-section">
-        <div class="checkout-title">Customer Information</div>
-        <label class="checkout-label"> First Name </label>
-        <input id="customer-first-name" class="checkout-input" type="text" />
+        <div class="section-heading">
+          <span class="section-number">1</span>
+          <div>
+            <div class="checkout-title">Delivery Details</div>
+            <p>Tell us where and when to bring your order.</p>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label class="checkout-label" for="customer-first-name">
+              First Name
+            </label>
+            <input
+              id="customer-first-name"
+              class="checkout-input"
+              type="text"
+              autocomplete="given-name"
+            />
+          </div>
 
-        <label class="checkout-label"> Last Name </label>
-        <input id="customer-last-name" class="checkout-input" type="text" />
+          <div class="field">
+            <label class="checkout-label" for="customer-last-name">
+              Last Name
+            </label>
+            <input
+              id="customer-last-name"
+              class="checkout-input"
+              type="text"
+              autocomplete="family-name"
+            />
+          </div>
+        </div>
 
-        <label class="checkout-label"> Phone Number </label>
-        <input id="customer-phone" class="checkout-input" type="tel" />
+        <div class="field-grid">
+          <div class="field">
+            <label class="checkout-label" for="customer-phone">
+              Phone Number
+            </label>
+            <input
+              id="customer-phone"
+              class="checkout-input"
+              type="tel"
+              autocomplete="tel"
+            />
+          </div>
 
-        <label class="checkout-label"> Email Address </label>
-        <input id="customer-email" class="checkout-input" type="email" />
+          <div class="field">
+            <label class="checkout-label" for="customer-email">
+              Email Address
+            </label>
+            <input
+              id="customer-email"
+              class="checkout-input"
+              type="email"
+              autocomplete="email"
+            />
+          </div>
+        </div>
 
-        <label class="checkout-label"> Address </label>
+        <label class="checkout-label" for="customer-address">
+          Delivery Address
+        </label>
 
         <div class="address-wrapper">
           <input
@@ -40,19 +94,30 @@
             id="customer-address"
             class="checkout-input"
             placeholder="Enter delivery address"
+            autocomplete="street-address"
           />
           <div id="address-suggestions"></div>
         </div>
-        <label class="checkout-label"> Delivery Time </label>
+        <label class="checkout-label" for="delivery-time">
+          Delivery Time
+        </label>
         <input
           id="delivery-time"
           class="checkout-input"
           type="datetime-local"
         />
+        <p class="field-help">Delivery times begin 24 hours after ordering.</p>
       </div>
     </div>
     <div class="right-column">
       <div id="payment-form-wrapper">
+        <div class="section-heading payment-heading">
+          <span class="section-number">2</span>
+          <div>
+            <div class="checkout-title">Payment</div>
+            <p>Choose how you would like to pay.</p>
+          </div>
+        </div>
         <div class="payment-methods">
           <label class="radio-option">
             <input
@@ -78,7 +143,10 @@
           </label>
         </div>
         <div class="tip-section">
-          <h3>Add a Tip</h3>
+          <div class="tip-heading">
+            <h3>Add a Tip</h3>
+            <span id="tip-display">0%</span>
+          </div>
 
           <div class="tip-buttons">
             <button class="tip-btn" onclick="setTip(10, this)">10%</button>
@@ -87,22 +155,65 @@
             <button class="tip-btn" onclick="setTip(0, this)">No Tip</button>
           </div>
 
-          <p id="tip-display">Tip: 0%</p>
-          <div class="checkout-section">
+          <div class="checkout-section order-summary">
             <div class="checkout-title">Order Summary</div>
 
             <div id="order-summary-items"></div>
 
             <hr />
-            Subtotal: $<span id="subtotal">0.00</span><br />
-            Delivery Fee: $<span id="delivery-fee">0.00</span><br />
-            Sales Tax: $<span id="sales-tax">0.00</span><br />
-            Tip: $<span id="tip-amount">0.00</span><br />
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>$<span id="subtotal">0.00</span></span>
+            </div>
+            <div class="summary-row">
+              <span>Delivery Fee</span>
+              <span>$<span id="delivery-fee">0.00</span></span>
+            </div>
+            <div class="summary-row">
+              <span>Sales Tax</span>
+              <span>$<span id="sales-tax">0.00</span></span>
+            </div>
+            <div class="summary-row">
+              <span>Tip</span>
+              <span>$<span id="tip-amount">0.00</span></span>
+            </div>
 
-            <h3>Total: $<span id="grand-total">0.00</span></h3>
+            <div class="summary-total">
+              <span>Total</span>
+              <span>$<span id="grand-total">0.00</span></span>
+            </div>
           </div>
           <div id="payment-form">
+            <div id="payment-status-container"></div>
+            <div id="wallet-payment-section" class="wallet-payment-section">
+              <div class="wallet-divider">
+                <span>Express Pay</span>
+              </div>
+              <button
+                id="apple-pay-button"
+                class="apple-pay-button"
+                type="button"
+                aria-label="Pay with Apple Pay"
+              ></button>
+              <div id="google-pay-button"></div>
+            </div>
+            <div
+              id="saved-payment-section"
+              class="saved-payment-section"
+              hidden
+            >
+              <label class="checkout-label" for="saved-card-select">
+                Payment Card
+              </label>
+              <select id="saved-card-select" class="checkout-select">
+                <option value="">Use a new card</option>
+              </select>
+            </div>
             <div id="card-container"></div>
+            <label id="save-card-option" class="save-card-option" hidden>
+              <input id="save-card-checkbox" type="checkbox" />
+              <span>Save this card securely for future orders</span>
+            </label>
             <button id="card-button" type="button">Pay</button>
           </div>
 
@@ -113,145 +224,372 @@
         </div>
       </div>
       <style>
-        /* 1. Base Framework Layout (Updated to your custom light green) */
-        body {
-          background-color: #d3ffb7;
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 40px 20px;
+        :root {
+          --ink: #203227;
+          --muted: #617267;
+          --leaf: #387a4a;
+          --leaf-dark: #285c37;
+          --leaf-soft: #e8f5e6;
+          --sky: #dceeff;
+          --surface: #ffffff;
+          --line: #d8e2d8;
+          --background: #eef8e9;
+          --danger: #a33a35;
         }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          background:
+            linear-gradient(
+              180deg,
+              rgba(255, 255, 255, 0.72) 0,
+              rgba(255, 255, 255, 0) 260px
+            ),
+            var(--background);
+          color: var(--ink);
+          font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
+          margin: 0;
+          min-height: 100vh;
+          padding: 28px 24px 56px;
+        }
+
+        .checkout-header {
+          margin: 0 auto 28px;
+          text-align: center;
+        }
+
+        .checkout-logo {
+          display: block;
+          margin: 0 auto;
+          max-width: 500px;
+          width: min(92vw, 500px);
+        }
+
+        .checkout-header p {
+          color: var(--muted);
+          font-size: 14px;
+          margin: 4px 0 0;
+        }
+
+        .account-links {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          margin-top: 10px;
+        }
+
+        .account-links a {
+          color: var(--leaf-dark);
+          font-size: 13px;
+          font-weight: 750;
+        }
+
         #payment-form-wrapper {
           max-width: none;
           width: 100%;
         }
-        /* 2. Vertically Stacked and Centered Radio Selectors */
+
         .payment-methods {
+          background: #dde9dc;
+          border-radius: 8px;
           display: flex;
-          justify-content: center;
-          gap: 40px;
-          margin: 20px 0 24px 0;
+          gap: 4px;
+          margin: 18px 0 24px;
+          padding: 4px;
         }
 
         .radio-option {
+          border-radius: 6px;
+          color: var(--muted);
           display: flex;
-          flex-direction: row;
+          flex: 1;
           align-items: center;
+          justify-content: center;
           gap: 10px;
           cursor: pointer;
-          color: #1a304a;
-          font-size: 16px;
-          font-weight: 500;
+          font-size: 14px;
+          font-weight: 700;
+          min-height: 46px;
+          padding: 9px 12px;
+          transition:
+            background-color 0.2s ease,
+            color 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .radio-option:has(input:checked) {
+          background: var(--surface);
+          box-shadow: 0 1px 4px rgba(32, 50, 39, 0.14);
+          color: var(--ink);
         }
 
         .radio-option input[type='radio'] {
+          accent-color: var(--leaf);
           margin: 0;
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
         }
 
-        /* 3. White Card Container Layout Box */
         #card-container {
-          background: #ffffff;
+          background: var(--surface);
+          border: 1px solid var(--line);
           border-radius: 8px;
-          padding: 12px;
-          margin-bottom: 20px;
-          box-sizing: border-box;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          padding: 14px;
+          margin-bottom: 16px;
+          box-shadow: 0 6px 20px rgba(32, 50, 39, 0.06);
           min-height: 90px;
         }
-        /* 4. Action Buttons Style Configuration */
+
+        .saved-payment-section {
+          margin-bottom: 4px;
+        }
+
+        .save-card-option {
+          align-items: flex-start;
+          color: var(--muted);
+          cursor: pointer;
+          display: flex;
+          font-size: 13px;
+          gap: 9px;
+          line-height: 1.4;
+          margin: -4px 0 16px;
+        }
+
+        .save-card-option input {
+          accent-color: var(--leaf);
+          flex: 0 0 auto;
+          margin-top: 2px;
+        }
+
+        .wallet-payment-section {
+          display: none;
+          margin-bottom: 18px;
+        }
+
+        .wallet-payment-section.available {
+          display: block;
+        }
+
+        .wallet-divider {
+          align-items: center;
+          color: var(--muted);
+          display: flex;
+          font-size: 11px;
+          font-weight: 800;
+          gap: 10px;
+          margin: 2px 0 12px;
+          text-transform: uppercase;
+        }
+
+        .wallet-divider::before,
+        .wallet-divider::after {
+          background: var(--line);
+          content: '';
+          flex: 1;
+          height: 1px;
+        }
+
+        .apple-pay-button {
+          -webkit-appearance: -apple-pay-button;
+          -apple-pay-button-style: black;
+          -apple-pay-button-type: buy;
+          appearance: none;
+          background: #000;
+          border: 0;
+          border-radius: 7px;
+          display: none;
+          min-height: 48px;
+          width: 100%;
+        }
+
+        .apple-pay-button.available {
+          display: block;
+        }
+
+        #google-pay-button {
+          display: none;
+          min-height: 48px;
+          width: 100%;
+        }
+
+        #google-pay-button.available {
+          display: block;
+        }
+
+        #google-pay-button > div,
+        #google-pay-button button {
+          min-height: 48px;
+          width: 100% !important;
+        }
+
         #card-button,
         #cash-button {
-          background-color: #8cc3ff;
-          color: #1a304a;
-          font-weight: bold;
+          background-color: var(--leaf);
+          color: #ffffff;
+          font-weight: 800;
           font-size: 16px;
           border: none;
           border-radius: 8px;
-          padding: 16px;
+          min-height: 52px;
+          padding: 14px 18px;
           width: 100%;
           cursor: pointer;
-          transition: background-color 0.2s ease;
+          box-shadow: 0 6px 14px rgba(56, 122, 74, 0.2);
+          transition:
+            background-color 0.2s ease,
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
         }
+
         #card-button:hover,
         #cash-button:hover {
-          background-color: #7ab5f0;
+          background-color: var(--leaf-dark);
+          box-shadow: 0 8px 18px rgba(40, 92, 55, 0.24);
+          transform: translateY(-1px);
         }
+
+        #card-button:disabled,
+        #cash-button:disabled {
+          background: #aebbb0;
+          box-shadow: none;
+          cursor: not-allowed;
+          transform: none;
+        }
+
         .checkout-section {
-          background: #ffffff;
+          background: var(--surface);
+          border: 1px solid rgba(216, 226, 216, 0.85);
           border-radius: 8px;
-          padding: 20px;
+          padding: 26px;
           margin-bottom: 24px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 30px rgba(32, 50, 39, 0.07);
+        }
+
+        .section-heading {
+          align-items: flex-start;
+          display: flex;
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+
+        .payment-heading {
+          margin-bottom: 0;
+        }
+
+        .section-number {
+          align-items: center;
+          background: var(--leaf);
+          border-radius: 50%;
+          color: #fff;
+          display: inline-flex;
+          flex: 0 0 30px;
+          font-size: 14px;
+          font-weight: 800;
+          height: 30px;
+          justify-content: center;
+        }
+
+        .section-heading p {
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.45;
+          margin: 3px 0 0;
         }
 
         .checkout-title {
-          color: #1a304a;
-          font-size: 20px;
-          font-weight: bold;
-          text-align: center;
-          margin-bottom: 16px;
+          color: var(--ink);
+          font-size: 19px;
+          font-weight: 800;
+          line-height: 1.25;
+          text-align: left;
+        }
+
+        .field-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .checkout-label {
           display: block;
-          color: #1a304a;
-          font-size: 14px;
-          font-weight: bold;
-          margin-bottom: 6px;
+          color: var(--ink);
+          font-size: 13px;
+          font-weight: 750;
+          margin-bottom: 7px;
         }
 
         .checkout-input,
         .checkout-select {
           width: 100%;
-          padding: 12px;
+          min-height: 46px;
+          padding: 11px 12px;
           margin-bottom: 16px;
-          border: 1px solid #d6dce5;
-          border-radius: 8px;
-          box-sizing: border-box;
+          border: 1px solid var(--line);
+          border-radius: 7px;
           font-size: 15px;
-          color: #1a304a;
-          background: #ffffff;
+          color: var(--ink);
+          background: #fbfdfb;
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            background-color 0.2s ease;
         }
 
         .checkout-input:focus,
         .checkout-select:focus {
+          background: var(--surface);
           outline: none;
-          border-color: #8cc3ff;
-          box-shadow: 0 0 0 3px rgba(140, 195, 255, 0.3);
+          border-color: var(--leaf);
+          box-shadow: 0 0 0 3px rgba(56, 122, 74, 0.15);
         }
 
-        /* 5. System Status Notifications */
-        #payment-status-container {
-          color: #1a304a; /* Dark text for visibility on light green */
-          text-align: center;
-          margin-bottom: 15px;
-          font-size: 14px;
+        .field-help {
+          color: var(--muted);
+          font-size: 12px;
+          margin: -8px 0 0;
         }
+
+        #payment-status-container,
         #cash-status-container {
-          color: #1a304a; /* Dark text for visibility on light green */
+          color: var(--danger);
           text-align: center;
           margin-bottom: 15px;
           font-size: 14px;
+          font-weight: 700;
         }
+
+        #payment-status-container:empty,
+        #cash-status-container:empty {
+          display: none;
+        }
+
         .address-wrapper {
           position: relative;
         }
+
         #address-suggestions {
           position: absolute;
           top: 100%;
           left: 0;
           right: 0;
 
-          background: white;
-          border: 1px solid #d6dce5;
-          border-radius: 0 0 8px 8px;
-
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 7px;
           max-height: 250px;
           overflow-y: auto;
-
           z-index: 9999;
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 12px 28px rgba(32, 50, 39, 0.15);
         }
 
         .address-option {
@@ -261,53 +599,186 @@
         }
 
         .address-option:hover {
-          background: #f5f9ff;
+          background: var(--leaf-soft);
+        }
+
+        .tip-section h3 {
+          font-size: 15px;
+          margin: 0;
+        }
+
+        .tip-heading {
+          align-items: center;
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+
+        #tip-display {
+          background: var(--leaf-soft);
+          border-radius: 999px;
+          color: var(--leaf-dark);
+          font-size: 12px;
+          font-weight: 800;
+          margin: 0;
+          padding: 5px 9px;
         }
 
         .tip-btn {
-          background: white;
-          border: 2px solid #8cc3ff;
-          color: #1a304a;
-          font-weight: bold;
-          padding: 10px 18px;
-          border-radius: 8px;
+          background: var(--surface);
+          border: 1px solid var(--line);
+          color: var(--ink);
+          font-weight: 750;
+          min-height: 40px;
+          padding: 8px 12px;
+          border-radius: 7px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            color 0.2s ease;
           text-align: center;
         }
 
         .tip-btn:hover {
-          background: #8cc3ff;
+          background: var(--leaf-soft);
+          border-color: #94bd9d;
         }
 
         .tip-btn.active {
-          background: #8cc3ff;
+          background: var(--leaf);
+          border-color: var(--leaf);
+          color: #ffffff;
         }
+
         .tip-buttons {
-          display: flex;
-          justify-content: center;
-          gap: 12px;
-          margin: 8px 0;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+          margin: 0 0 22px;
         }
+
+        .order-summary {
+          padding: 22px;
+        }
+
+        .order-summary .checkout-title {
+          margin-bottom: 18px;
+          text-align: center;
+        }
+
+        #order-summary-items {
+          color: var(--ink);
+          font-size: 14px;
+        }
+
+        .order-item {
+          align-items: start;
+          display: flex;
+          gap: 16px;
+          justify-content: space-between;
+          line-height: 1.4;
+          margin-bottom: 10px;
+        }
+
+        .order-item-price {
+          flex: 0 0 auto;
+          font-weight: 700;
+        }
+
+        .order-summary hr {
+          border: 0;
+          border-top: 1px solid var(--line);
+          margin: 18px 0 14px;
+        }
+
+        .summary-row,
+        .summary-total {
+          align-items: center;
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .summary-row {
+          color: var(--muted);
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+
+        .summary-total {
+          border-top: 1px solid var(--line);
+          font-size: 19px;
+          font-weight: 850;
+          margin-top: 15px;
+          padding-top: 15px;
+        }
+
         .form-wrapper {
           display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 32px;
+          grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.85fr);
+          gap: 40px;
           align-items: start;
-          max-width: 1500px;
+          max-width: 1180px;
           margin: 0 auto;
         }
-        @media (max-width: 992px) {
+
+        .right-column {
+          position: sticky;
+          top: 24px;
+        }
+
+        @media (max-width: 900px) {
           .form-wrapper {
             grid-template-columns: 1fr;
+            gap: 14px;
+            max-width: 680px;
+          }
+
+          .right-column {
+            position: static;
           }
         }
+
         .left-column {
           width: 100%;
         }
 
         .right-column {
           width: 100%;
+        }
+
+        @media (max-width: 560px) {
+          body {
+            padding: 20px 14px 40px;
+          }
+
+          .checkout-header {
+            margin-bottom: 20px;
+          }
+
+          .checkout-section {
+            padding: 20px 16px;
+          }
+
+          .field-grid {
+            gap: 0;
+            grid-template-columns: 1fr;
+          }
+
+          .payment-methods {
+            align-items: stretch;
+          }
+
+          .radio-option {
+            font-size: 13px;
+            line-height: 1.25;
+            padding: 8px;
+            text-align: center;
+          }
+
+          .tip-buttons {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
       </style>
 
@@ -322,6 +793,9 @@
           document.getElementById('cash-button').disabled = false;
         }
         let summary = { items: [], subtotal: 0 };
+        const walletPaymentRequests = [];
+        let customerAccount = null;
+        let savedCards = [];
 
         function updateOrderSummary() {
           const subtotal = Number(summary.subtotal || 0);
@@ -343,18 +817,147 @@
 
           document.getElementById('grand-total').textContent =
             grandTotal.toFixed(2);
+
+          walletPaymentRequests.forEach((paymentRequest) => {
+            paymentRequest.update(getWalletPaymentRequestUpdate());
+          });
         }
+
+        function getWalletPaymentRequestUpdate() {
+          const subtotal = Number(summary.subtotal || 0);
+          const deliveryFee = subtotal < 40 ? 3 : 0;
+          const salesTax = subtotal * 0.08225;
+          const tipAmount = subtotal * (selectedTip / 100);
+          const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
+
+          return {
+            lineItems: [
+              { amount: subtotal.toFixed(2), label: 'Subtotal' },
+              { amount: deliveryFee.toFixed(2), label: 'Delivery Fee' },
+              { amount: salesTax.toFixed(2), label: 'Sales Tax' },
+              { amount: tipAmount.toFixed(2), label: 'Tip' },
+            ],
+            total: {
+              amount: grandTotal.toFixed(2),
+              label: 'The Family Pantry',
+            },
+          };
+        }
+
+        function createWalletPaymentRequest() {
+          const paymentRequest = payments.paymentRequest({
+            countryCode: 'US',
+            currencyCode: 'USD',
+            ...getWalletPaymentRequestUpdate(),
+          });
+
+          walletPaymentRequests.push(paymentRequest);
+          return paymentRequest;
+        }
+
+        function getMinimumDeliveryDate() {
+          const minimumDeliveryDate = new Date(
+            Date.now() + 24 * 60 * 60 * 1000,
+          );
+
+          minimumDeliveryDate.setSeconds(0, 0);
+          minimumDeliveryDate.setMinutes(minimumDeliveryDate.getMinutes() + 1);
+
+          return minimumDeliveryDate;
+        }
+
+        function formatDateTimeLocal(date) {
+          const pad = (value) => String(value).padStart(2, '0');
+
+          return (
+            `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+            `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+          );
+        }
+
+        function setupDeliveryTimeInput() {
+          const deliveryTimeInput = document.getElementById('delivery-time');
+          const minimumDeliveryTime = formatDateTimeLocal(
+            getMinimumDeliveryDate(),
+          );
+
+          deliveryTimeInput.min = minimumDeliveryTime;
+
+          if (
+            !deliveryTimeInput.value ||
+            deliveryTimeInput.value < minimumDeliveryTime
+          ) {
+            deliveryTimeInput.value = minimumDeliveryTime;
+          }
+        }
+
+        function validateDeliveryTime(deliveryTime) {
+          if (!deliveryTime) {
+            throw new Error('Please choose a delivery time.');
+          }
+
+          const selectedTime = new Date(deliveryTime);
+
+          if (Number.isNaN(selectedTime.getTime())) {
+            throw new Error('Please choose a valid delivery time.');
+          }
+
+          if (selectedTime < getMinimumDeliveryDate()) {
+            throw new Error(
+              'Delivery time must be at least 24 hours from now.',
+            );
+          }
+        }
+
+        setupDeliveryTimeInput();
 
         const addressInput = document.getElementById('customer-address');
 
         const suggestions = document.getElementById('address-suggestions');
 
+        async function resolveDeliveryAddress() {
+          let lat = addressInput.dataset.lat;
+          let lon = addressInput.dataset.lon;
+
+          if (!lat || !lon) {
+            const lookup = await fetch(
+              `/address-search?q=${encodeURIComponent(addressInput.value)}`,
+            );
+
+            const data = await lookup.json();
+
+            if (!data.results?.length) {
+              throw new Error('Please enter a valid address.');
+            }
+
+            lat = data.results[0].position.lat;
+            lon = data.results[0].position.lon;
+            addressInput.dataset.lat = lat;
+            addressInput.dataset.lon = lon;
+          }
+
+          const validation = await fetch('/validate-address', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lon }),
+          });
+
+          const deliveryCheck = await validation.json();
+
+          if (!deliveryCheck.allowed) {
+            throw new Error(
+              `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. Delivery is limited to 15 miles.`,
+            );
+          }
+
+          return { lat, lon };
+        }
+
         window.setTip = function (percent, button) {
           selectedTip = percent;
           updateOrderSummary();
 
-          document.getElementById('tip-display').textContent =
-            `Tip: ${percent}%`;
+          document.getElementById('tip-display').textContent = `${percent}%`;
 
           document.querySelectorAll('.tip-btn').forEach((btn) => {
             btn.classList.remove('active');
@@ -363,13 +966,128 @@
           button.classList.add('active');
         };
 
-        const locationId = 'LQDHY43WBKWXT';
+        const squareConfigResponse = await fetch('/square-config');
+        const squareConfig = await squareConfigResponse.json();
+
+        if (!squareConfigResponse.ok || !squareConfig.success) {
+          throw new Error(
+            squareConfig.error ||
+              'Square payment configuration is unavailable.',
+          );
+        }
+
+        const locationId = squareConfig.locationId;
         const payments = Square.payments(
-          'sandbox-sq0idb-K4jPLo1VWDr-iUoZBXTt2g',
-          'LQDHY43WBKWXT',
+          squareConfig.applicationId,
+          squareConfig.locationId,
         );
         const card = await payments.card();
         await card.attach('#card-container');
+
+        const savedCardSelect = document.getElementById('saved-card-select');
+        const savedPaymentSection = document.getElementById(
+          'saved-payment-section',
+        );
+        const saveCardOption = document.getElementById('save-card-option');
+        const saveCardCheckbox = document.getElementById('save-card-checkbox');
+        const cardContainer = document.getElementById('card-container');
+
+        function updateSavedCardChoice() {
+          const usingSavedCard = Boolean(savedCardSelect.value);
+          cardContainer.style.display = usingSavedCard ? 'none' : 'block';
+          saveCardOption.hidden = !customerAccount || usingSavedCard;
+          cardButton.textContent = usingSavedCard
+            ? 'Pay with Saved Card'
+            : 'Pay';
+        }
+
+        async function loadCustomerAccount() {
+          const session = await fetch('/account/session').then((response) =>
+            response.json(),
+          );
+
+          if (!session.loggedIn) return;
+
+          customerAccount = session.customer;
+          document.getElementById('account-sign-in').hidden = true;
+          document.getElementById('account-manage').hidden = false;
+
+          const emailInput = document.getElementById('customer-email');
+          if (!emailInput.value) emailInput.value = customerAccount.email;
+
+          const response = await fetch('/account/cards');
+          const result = await response.json();
+          if (!response.ok) return;
+
+          savedCards = result.cards || [];
+          savedCardSelect.innerHTML =
+            '<option value="">Use a new card</option>' +
+            savedCards
+              .map(
+                (savedCard) =>
+                  `<option value="${savedCard.id}">${savedCard.brand} ending in ${savedCard.last4}</option>`,
+              )
+              .join('');
+          savedPaymentSection.hidden = savedCards.length === 0;
+          saveCardOption.hidden = false;
+        }
+
+        savedCardSelect.addEventListener('change', updateSavedCardChoice);
+
+        async function initializeDigitalWallets() {
+          const walletSection = document.getElementById(
+            'wallet-payment-section',
+          );
+          const statusContainer = document.getElementById(
+            'payment-status-container',
+          );
+          const applePayButton = document.getElementById('apple-pay-button');
+          const googlePayButton = document.getElementById('google-pay-button');
+          const userAgent = navigator.userAgent || '';
+          const isAppleMobile =
+            /iPhone|iPod/.test(userAgent) ||
+            (/Macintosh/.test(userAgent) && navigator.maxTouchPoints > 1);
+          const isAndroidPhone =
+            /Android/.test(userAgent) && /Mobile/.test(userAgent);
+
+          if (isAppleMobile) {
+            try {
+              const applePay = await payments.applePay(
+                createWalletPaymentRequest(),
+              );
+
+              applePayButton.classList.add('available');
+              walletSection.classList.add('available');
+              applePayButton.addEventListener('click', () =>
+                processTokenPayment('Apple Pay', applePay, statusContainer),
+              );
+            } catch (error) {
+              console.info('Apple Pay is not available on this device.');
+            }
+          }
+
+          if (isAndroidPhone) {
+            try {
+              const googlePay = await payments.googlePay(
+                createWalletPaymentRequest(),
+              );
+
+              await googlePay.attach('#google-pay-button', {
+                buttonColor: 'default',
+                buttonSizeMode: 'fill',
+                buttonType: 'long',
+              });
+
+              googlePayButton.classList.add('available');
+              walletSection.classList.add('available');
+              googlePayButton.addEventListener('click', () =>
+                processTokenPayment('Google Pay', googlePay, statusContainer),
+              );
+            } catch (error) {
+              console.info('Google Pay is not available on this device.');
+            }
+          }
+        }
 
         window.addEventListener('pageshow', () => {
           updateCheckoutButtons();
@@ -377,112 +1095,186 @@
 
         const cardButton = document.getElementById('card-button');
 
-        cardButton.addEventListener('click', async () => {
+        cardButton.addEventListener('click', () => {
           const statusContainer = document.getElementById(
             'payment-status-container',
           );
+
+          if (savedCardSelect.value) {
+            processSavedCardPayment(savedCardSelect.value, statusContainer);
+          } else {
+            processTokenPayment('Card', card, statusContainer);
+          }
+        });
+
+        function getCardVerificationDetails(intent) {
+          const address = document.getElementById('customer-address').value;
+          const grandTotal = Number(
+            document.getElementById('grand-total').textContent,
+          );
+
+          return {
+            amount: grandTotal.toFixed(2),
+            billingContact: {
+              givenName: document.getElementById('customer-first-name').value,
+              familyName: document.getElementById('customer-last-name').value,
+              email: document.getElementById('customer-email').value,
+              phone: document.getElementById('customer-phone').value,
+              addressLines: address ? [address] : [],
+              countryCode: 'US',
+            },
+            currencyCode: 'USD',
+            intent,
+            customerInitiated: true,
+            sellerKeyedIn: false,
+          };
+        }
+
+        async function saveCardForAccount(sourceId) {
+          const response = await fetch('/account/cards/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sourceId,
+              consent: true,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || 'Unable to save this card.');
+          }
+          return result.card;
+        }
+
+        async function processSavedCardPayment(cardId, statusContainer) {
+          statusContainer.textContent = '';
+
+          try {
+            const deliveryTime = document.getElementById('delivery-time').value;
+            validateDeliveryTime(deliveryTime);
+            const { lat, lon } = await resolveDeliveryAddress();
+            const paymentResults = await CreatePayment(
+              cardId,
+              lat,
+              lon,
+              'Card',
+              cardId,
+            );
+            redirectToConfirmation(paymentResults, 'Card');
+          } catch (err) {
+            statusContainer.textContent =
+              err.message || 'Saved card payment failed.';
+          }
+        }
+
+        async function processTokenPayment(
+          paymentMethod,
+          paymentObject,
+          statusContainer,
+        ) {
+          statusContainer.textContent = '';
 
           try {
             const firstName = document.getElementById(
               'customer-first-name',
             ).value;
-
             const lastName =
               document.getElementById('customer-last-name').value;
-
             const phone = document.getElementById('customer-phone').value;
-
             const email = document.getElementById('customer-email').value;
-
-            const addressInput = document.getElementById('customer-address');
-
             const address = document.getElementById('customer-address').value;
-
             const deliveryTime = document.getElementById('delivery-time').value;
 
-            const lat = addressInput.dataset.lat;
-            const lon = addressInput.dataset.lon;
-
-            if (!lat || !lon) {
-              alert('Address outside delivery area.');
-              return;
-            }
-            const validation = await fetch('/validate-address', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                lat,
-                lon,
-              }),
-            });
-
-            const deliveryCheck = await validation.json();
-
-            if (!deliveryCheck.allowed) {
-              alert(
-                `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. Delivery is limited to 15 miles.`,
-              );
-              return;
-            }
-            const tokenResult = await card.tokenize();
+            validateDeliveryTime(deliveryTime);
+            const { lat, lon } = await resolveDeliveryAddress();
+            const shouldSaveCard =
+              paymentMethod === 'Card' &&
+              customerAccount &&
+              saveCardCheckbox.checked;
+            const tokenResult =
+              paymentMethod === 'Card'
+                ? await paymentObject.tokenize(
+                    getCardVerificationDetails(
+                      shouldSaveCard ? 'CHARGE_AND_STORE' : 'CHARGE',
+                    ),
+                  )
+                : await paymentObject.tokenize();
 
             if (tokenResult.status !== 'OK') {
-              console.log(JSON.stringify(tokenResult.errors, null, 2));
-              throw new Error('Tokenization failed');
+              throw new Error(
+                tokenResult.errors?.[0]?.message ||
+                  `${paymentMethod} authorization was not completed.`,
+              );
             }
 
-            console.log('Creating payment...');
+            let paymentSourceId = tokenResult.token;
+            let savedCardId = null;
 
-            const paymentResults = await CreatePayment(tokenResult.token);
+            if (shouldSaveCard) {
+              const savedCard = await saveCardForAccount(tokenResult.token);
+              paymentSourceId = savedCard.id;
+              savedCardId = savedCard.id;
+            }
 
-            console.log('PAYMENT RESULT:', paymentResults);
-
-            const itemList = paymentResults.items
-              .map(
-                (item) =>
-                  `${item.name} (${item.variationName}) x${item.quantity}`,
-              )
-              .join(', ');
-
-            localStorage.removeItem('cartItems');
-            updateCheckoutButtons();
-
-            console.log('AFTER CLEAR:', localStorage.getItem('cartItems'));
-            updateOrderSummary();
-
-            console.log('PAYMENT RESULTS:', paymentResults);
-
-            const subtotal = Number(summary.subtotal || 0);
-            const deliveryFee = subtotal < 40 ? 3 : 0;
-            const salesTax = subtotal * 0.08225;
-            const tipAmount = subtotal * (selectedTip / 100);
-            const grandTotal = subtotal + deliveryFee + salesTax + tipAmount;
-
-            window.location.href =
-              `/confirmation?orderNumber=${encodeURIComponent(paymentResults.orderNumber)}` +
-              `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
-              `&firstName=${encodeURIComponent(firstName)}` +
-              `&lastName=${encodeURIComponent(lastName)}` +
-              `&phone=${encodeURIComponent(phone)}` +
-              `&email=${encodeURIComponent(email)}` +
-              `&address=${encodeURIComponent(address)}` +
-              `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
-              `&method=Card` +
-              `&items=${encodeURIComponent(itemList)}` +
-              `&subtotal=${subtotal.toFixed(2)}` +
-              `&deliveryFee=${deliveryFee.toFixed(2)}` +
-              `&salesTax=${salesTax.toFixed(2)}` +
-              `&tip=${tipAmount.toFixed(2)}` +
-              `&total=${grandTotal.toFixed(2)}`;
+            const paymentResults = await CreatePayment(
+              paymentSourceId,
+              lat,
+              lon,
+              paymentMethod,
+              savedCardId,
+            );
+            redirectToConfirmation(paymentResults, paymentMethod);
           } catch (err) {
-            console.error('FULL ERROR:', err);
-
-            statusContainer.innerHTML = 'Payment Failed';
+            console.error(`${paymentMethod.toUpperCase()} ERROR:`, err);
+            statusContainer.textContent =
+              err.message || `${paymentMethod} payment failed.`;
           }
-        });
-        async function CreatePayment(token) {
+        }
+
+        function redirectToConfirmation(paymentResults, paymentMethod) {
+          const firstName = document.getElementById(
+            'customer-first-name',
+          ).value;
+          const lastName = document.getElementById('customer-last-name').value;
+          const phone = document.getElementById('customer-phone').value;
+          const email = document.getElementById('customer-email').value;
+          const address = document.getElementById('customer-address').value;
+          const deliveryTime = document.getElementById('delivery-time').value;
+          const itemList = paymentResults.items
+            .map(
+              (item) =>
+                `${item.name} (${item.variationName}) x${item.quantity}`,
+            )
+            .join(', ');
+
+          localStorage.removeItem('cartItems');
+          updateCheckoutButtons();
+
+          window.location.href =
+            `/confirmation?orderNumber=${encodeURIComponent(paymentResults.orderNumber)}` +
+            `&receiptUrl=${encodeURIComponent(paymentResults.payment.receiptUrl || '')}` +
+            `&firstName=${encodeURIComponent(firstName)}` +
+            `&lastName=${encodeURIComponent(lastName)}` +
+            `&phone=${encodeURIComponent(phone)}` +
+            `&email=${encodeURIComponent(email)}` +
+            `&address=${encodeURIComponent(address)}` +
+            `&deliveryTime=${encodeURIComponent(deliveryTime)}` +
+            `&method=${encodeURIComponent(paymentMethod)}` +
+            `&items=${encodeURIComponent(itemList)}` +
+            `&subtotal=${Number(paymentResults.subtotal).toFixed(2)}` +
+            `&deliveryFee=${Number(paymentResults.deliveryFee).toFixed(2)}` +
+            `&salesTax=${Number(paymentResults.salesTax).toFixed(2)}` +
+            `&tip=${Number(paymentResults.tipAmount).toFixed(2)}` +
+            `&total=${Number(paymentResults.grandTotal).toFixed(2)}`;
+        }
+
+        async function CreatePayment(
+          token,
+          lat,
+          lon,
+          paymentMethod = 'Card',
+          savedCardId = null,
+        ) {
           const firstName = document.getElementById(
             'customer-first-name',
           ).value;
@@ -497,6 +1289,8 @@
           const body = JSON.stringify({
             locationId,
             sourceId: token,
+            paymentMethod,
+            savedCardId,
             idempotencyKey: crypto.randomUUID(),
             firstName,
             lastName,
@@ -504,6 +1298,8 @@
             email,
             address,
             deliveryTime,
+            lat,
+            lon,
             items: cartItems,
             tipPercent: selectedTip,
           });
@@ -553,39 +1349,14 @@
 
             const deliveryTime = document.getElementById('delivery-time').value;
 
+            validateDeliveryTime(deliveryTime);
+
             const cartItems =
               JSON.parse(localStorage.getItem('cartItems')) || [];
 
             console.log('SELECTED TIP:', selectedTip);
 
-            const lat = addressInput.dataset.lat;
-            const lon = addressInput.dataset.lon;
-
-            console.log('LAT:', lat);
-            console.log('LON:', lon);
-
-            if (!lat || !lon) {
-              statusContainer.innerHTML = 'Address outside delivery area.';
-              return;
-            }
-            const validation = await fetch('/validate-address', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                lat,
-                lon,
-              }),
-            });
-
-            const deliveryCheck = await validation.json();
-
-            if (!deliveryCheck.allowed) {
-              statusContainer.innerHTML = `Sorry, this address is ${deliveryCheck.miles.toFixed(1)} miles away. We only deliver within 15 miles.`;
-
-              return;
-            }
+            const { lat, lon } = await resolveDeliveryAddress();
 
             if (cartItems.length === 0) {
               alert(
@@ -609,6 +1380,8 @@
                 email,
                 address,
                 deliveryTime,
+                lat,
+                lon,
                 items: cartItems,
                 tipPercent: selectedTip,
               }),
@@ -679,7 +1452,7 @@
           addressInput.dataset.lat = '';
           addressInput.dataset.lon = '';
 
-          if (query.length < 2) {
+          if (query.length < 3) {
             suggestions.innerHTML = '';
             suggestions.style.display = 'none';
             return;
@@ -687,7 +1460,6 @@
 
           try {
             console.log('Searching:', query);
-
             const response = await fetch(
               `/address-search?q=${encodeURIComponent(query)}`,
             );
@@ -738,6 +1510,20 @@
             console.error('AZURE ERROR:', err);
           }
         });
+        addressInput.addEventListener('blur', async () => {
+          if (addressInput.dataset.lat) return;
+
+          const response = await fetch(
+            `/address-search?q=${encodeURIComponent(addressInput.value)}`,
+          );
+
+          const data = await response.json();
+
+          if (data.results?.length) {
+            addressInput.dataset.lat = data.results[0].position.lat;
+            addressInput.dataset.lon = data.results[0].position.lon;
+          }
+        });
         document.addEventListener('click', (e) => {
           const suggestions = document.getElementById('address-suggestions');
 
@@ -760,6 +1546,8 @@
         console.log('SUMMARY:', summary);
 
         updateOrderSummary();
+        await loadCustomerAccount();
+        await initializeDigitalWallets();
 
         document.querySelectorAll('.tip-btn').forEach((btn) => {
           if (btn.textContent.includes('No Tip')) {
@@ -773,18 +1561,14 @@
 
         summary.items.forEach((item) => {
           container.innerHTML += `
-		<div style="
-		  display:flex;
-		  justify-content:space-between;
-		  margin-bottom:4px;
-		">
-		  <span>
+		<div class="order-item">
+		  <span class="order-item-name">
 			${item.name}
 			(${item.variationName})
 			x${item.quantity}
 		  </span>
 
-		  <span>
+		  <span class="order-item-price">
 			$${item.totalPrice.toFixed(2)}
 		  </span>
 		</div>

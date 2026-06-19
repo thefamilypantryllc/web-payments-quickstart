@@ -1,474 +1,567 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <title>Order Confirmation</title>
-
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Order Confirmation | The Family Pantry</title>
     <style>
-      .success-banner {
-        text-align: center;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #e5e5e5;
+      :root {
+        --ink: #202d24;
+        --muted: #647168;
+        --leaf: #387a4a;
+        --leaf-dark: #285c37;
+        --leaf-soft: #e8f5e6;
+        --surface: #ffffff;
+        --line: #d8e2d8;
+        --background: #eef8e9;
+        --warning: #9b5416;
       }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        background: #d3ffb7;
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        padding: 40px;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.75),
+            rgba(255, 255, 255, 0) 360px
+          ),
+          var(--background);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        padding: 26px 18px 50px;
+      }
+
+      .confirmation-page {
+        margin: 0 auto;
+        max-width: 760px;
+      }
+
+      .brand-logo {
+        display: block;
+        margin: 0 auto 18px;
+        max-width: 500px;
+        width: min(92vw, 500px);
       }
 
       .confirmation-card {
-        background: white;
-        border-radius: 10px;
-        padding: 30px;
-        width: 600px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        justify-content: center;
-        align-items: center;
-      }
-
-      h1 {
-        text-align: center;
-        color: #1a304a;
-      }
-
-      .row {
-        margin-bottom: 15px;
-      }
-      .label {
-        font-weight: bold;
-        color: #1a304a;
-      }
-
-      .total-row {
-        display: flex;
-        justify-content: space-between;
-        margin: 10px 0;
-      }
-      .total {
-        font-weight: bold;
-        font-size: 20px;
-        border-top: 2px solid #ddd;
-        padding-top: 10px;
-      }
-      .confirmation-card {
-        background: white;
-        border-radius: 16px;
-        padding: 40px;
-        width: 700px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-
-        justify-content: center;
-        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 14px 38px rgba(32, 45, 36, 0.1);
+        padding: 34px;
       }
 
       .success-banner {
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 26px;
+        padding-bottom: 24px;
         text-align: center;
-        margin-bottom: 30px;
       }
 
       .success-icon {
-        font-size: 48px;
-        color: #4caf50;
+        align-items: center;
+        background: var(--leaf);
+        border-radius: 50%;
+        color: #fff;
+        display: inline-flex;
+        font-size: 24px;
+        font-weight: 800;
+        height: 50px;
+        justify-content: center;
+        margin-bottom: 12px;
+        width: 50px;
       }
 
-      .section {
-        margin-top: 25px;
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
       }
 
-      .section h3 {
-        border-bottom: 2px solid #e5e5e5;
-        padding-bottom: 8px;
-        margin-bottom: 15px;
-        color: #1a304a;
-      }
-
-      .item-row {
-        display: flex;
-        justify-content: space-between;
-        margin: 8px 0;
-      }
-
-      .grand-total {
+      h1 {
         font-size: 28px;
-        font-weight: bold;
-        color: #1a304a;
+        line-height: 1.2;
+        margin-bottom: 7px;
       }
+
+      .success-banner p {
+        color: var(--muted);
+        margin-bottom: 0;
+      }
+
+      .details-grid {
+        display: grid;
+        gap: 0 28px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .row {
+        border-bottom: 1px solid #edf1ed;
+        display: grid;
+        gap: 4px;
+        padding: 11px 0;
+      }
+
+      .row-wide {
+        grid-column: 1 / -1;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        text-transform: uppercase;
+      }
+
+      .value,
+      #orderNumber {
+        overflow-wrap: anywhere;
+      }
+
+      .delivery-box {
+        align-items: center;
+        background: var(--leaf-soft);
+        border-left: 4px solid var(--leaf);
+        border-radius: 6px;
+        display: flex;
+        gap: 12px;
+        margin: 22px 0;
+        padding: 16px 18px;
+      }
+
+      .delivery-mark {
+        color: var(--leaf-dark);
+        font-size: 20px;
+        font-weight: 850;
+      }
+
+      .delivery-copy {
+        display: grid;
+        gap: 3px;
+      }
+
+      .delivery-copy span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        text-transform: uppercase;
+      }
+
+      .delivery-copy strong {
+        color: var(--ink);
+        line-height: 1.4;
+      }
+
+      .status-paid,
+      .status-cash {
+        border-radius: 999px;
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 5px 9px;
+        width: fit-content;
+      }
+
       .status-paid {
-        color: #2e7d32;
-        font-weight: bold;
+        background: var(--leaf-soft);
+        color: var(--leaf-dark);
       }
 
       .status-cash {
-        color: #ef6c00;
-        font-weight: bold;
+        background: #fff1df;
+        color: var(--warning);
       }
-      .delivery-box {
-        background: linear-gradient(135deg, #e8f4ff, #d6ecff);
-        border-left: 6px solid #1a304a;
-        border-radius: 8px;
-        padding: 16px 18px;
-        margin: 18px 0 22px 0;
-        justify-content: center;
-        align-items: center;
 
-        font-size: 16px;
+      .section {
+        margin-top: 30px;
+      }
+
+      .section h2 {
+        font-size: 20px;
+        margin-bottom: 18px;
+      }
+
+      .section h3 {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #order-items {
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+      }
+
+      .item-row {
+        line-height: 1.45;
+        padding: 6px 0;
+      }
+
+      .total-row {
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+      }
+
+      .total {
+        border-top: 1px solid var(--line);
+        color: var(--ink);
+        font-size: 24px;
+        font-weight: 850;
+        margin-top: 12px;
+        padding-top: 15px;
+      }
+
+      .delivery-info {
+        background: #f8fbf7;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        margin-top: 28px;
+        padding: 18px;
+        text-align: center;
+      }
+
+      .delivery-info h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      .delivery-info p {
+        color: var(--muted);
+        font-size: 14px;
         line-height: 1.5;
+        margin-bottom: 5px;
+      }
 
-        box-shadow: 0 2px 8px rgba(26, 48, 74, 0.12);
+      .delivery-info p:last-child {
+        margin-bottom: 0;
       }
-      .delivery-box strong {
-        color: #e65100;
-        font-size: 18px;
-      }
+
       .action-buttons {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        margin-top: 25px;
         flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 22px;
       }
 
       .action-btn {
-        background: #1a304a;
-        color: white;
-        text-decoration: none;
-
-        display: inline-flex;
-        justify-content: center;
         align-items: center;
-
-        width: 170px;
-        height: 44px;
-
-        border-radius: 6px;
-        border: none;
-
+        background: var(--leaf);
+        border: 1px solid var(--leaf);
+        border-radius: 7px;
+        color: #fff;
         cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        color: white;
-      }
-      .action-btn {
-        background: #1a304a;
-        color: white;
-        text-decoration: none;
-
         display: inline-flex;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 750;
         justify-content: center;
-        align-items: center;
-
-        width: 170px;
-        height: 44px;
-
-        border-radius: 6px;
-        border: none;
-
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-
-        transition: all 0.2s ease;
+        width: min(180px, 100%);
+        min-height: 44px;
+        padding: 10px 12px;
+        text-align: center;
+        text-decoration: none;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease;
       }
 
       .action-btn:hover {
-        background: #29476b;
-        transform: translateY(-2px);
+        background: var(--leaf-dark);
+        border-color: var(--leaf-dark);
       }
 
-      .confirmation-card {
-        background: white;
-        border-radius: 16px;
-        padding: 40px;
-        width: 100%;
-        max-width: 700px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-        justify-content: center;
-        align-items: center;
-      }
-      .total-row {
-        padding: 6px 0;
+      .print-button {
+        background: var(--surface);
+        color: var(--leaf-dark);
       }
 
-      .total {
-        margin-top: 10px;
-      }
-      #orderNumber {
-        word-break: break-all;
-      }
-      .action-btn:active {
-        transform: translateY(0);
-      }
-      .summary-divider {
-        border: none;
-        border-top: 1px solid #d9d9d9;
-        margin: 15px 0;
-      }
-      .total {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 2px solid #1a304a;
+      @media (max-width: 620px) {
+        body {
+          padding: 18px 12px 36px;
+        }
 
-        font-size: 34px;
-        font-weight: bold;
-        color: #1a304a;
+        .confirmation-card {
+          padding: 24px 18px;
+        }
+
+        .details-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .row-wide {
+          grid-column: auto;
+        }
+
+        .action-buttons {
+          align-items: center;
+          flex-direction: column;
+        }
       }
-      .total-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 4px 0;
-      }
-      #order-items {
-        margin-bottom: 15px;
-      }
-      .item-row {
-        padding: 6px 0;
+
+      @media print {
+        body {
+          background: #fff;
+          padding: 0;
+        }
+
+        .brand-logo {
+          max-width: 360px;
+        }
+
+        .confirmation-card {
+          border: 0;
+          box-shadow: none;
+          padding: 0;
+        }
+
+        .action-buttons {
+          display: none;
+        }
       }
     </style>
   </head>
 
   <body>
-    <body>
-      <div
-        style="
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 40px 20px;
-        "
-      >
-        <img
-          src="/logo.png"
-          alt="The Family Pantry"
-          style="max-width: 400px; width: 90%; margin-bottom: 20px"
-        />
-        <div class="confirmation-card">
-          <div class="success-banner">
-            <div class="success-icon">✅</div>
-            <h1>Order Confirmed</h1>
-            <p>Thank you for your order!</p>
-          </div>
+    <main class="confirmation-page">
+      <img
+        class="brand-logo"
+        src="/family-pantry-logo-transparent.png?v=2"
+        alt="The Family Pantry"
+      />
 
+      <article class="confirmation-card">
+        <header class="success-banner">
+          <div class="success-icon" aria-hidden="true">&#10003;</div>
+          <h1>Order Confirmed</h1>
+          <p>Thank you. Your order has been received.</p>
+        </header>
+
+        <section class="details-grid" aria-label="Order details">
           <div class="row">
-            <span class="label">Order ID:</span>
-            <span id="orderNumber"></span>
+            <span class="label">Order ID</span>
+            <span class="value" id="orderNumber"></span>
           </div>
-
           <div class="row">
-            <span class="label">Customer:</span>
-            <span id="customer"></span>
+            <span class="label">Customer</span>
+            <span class="value" id="customer"></span>
           </div>
-
           <div class="row">
-            <span class="label">Phone:</span>
-            <span id="phone"></span>
+            <span class="label">Phone</span>
+            <span class="value" id="phone"></span>
           </div>
-
           <div class="row">
-            <span class="label">Email:</span>
-            <span id="email"></span>
+            <span class="label">Email</span>
+            <span class="value" id="email"></span>
           </div>
-
-          <div class="row">
-            <span class="label">Delivery Address:</span>
-            <span id="address"></span>
+          <div class="row row-wide">
+            <span class="label">Delivery Address</span>
+            <span class="value" id="address"></span>
           </div>
+        </section>
 
-          <div class="delivery-box">
-            🚚 Expected Delivery:
+        <div class="delivery-box">
+          <span class="delivery-mark" aria-hidden="true">&#8594;</span>
+          <div class="delivery-copy">
+            <span>Expected Delivery</span>
             <strong id="deliveryTime"></strong>
           </div>
+        </div>
 
+        <section class="details-grid" aria-label="Payment details">
           <div class="row">
-            <span class="label">Payment Method:</span>
-            <span id="method"></span>
+            <span class="label">Payment Method</span>
+            <span class="value" id="method"></span>
           </div>
-
           <div class="row">
-            <span class="label">Status:</span>
+            <span class="label">Status</span>
             <span id="status"></span>
           </div>
+        </section>
 
-          <hr />
-
+        <section class="section">
           <h2>Order Summary</h2>
-
-          <div class="section">
-            <h3>Order Items</h3>
-
-            <div id="order-items"></div>
-          </div>
-
-          <hr class="summary-divider" />
+          <h3>Order Items</h3>
+          <div id="order-items"></div>
 
           <div class="total-row">
             <span>Subtotal</span>
             <span id="subtotal"></span>
           </div>
-
           <div class="total-row">
             <span>Delivery Fee</span>
             <span id="deliveryFee"></span>
           </div>
-
           <div class="total-row">
             <span>Sales Tax</span>
             <span id="salesTax"></span>
           </div>
-
           <div class="total-row">
             <span>Tip</span>
             <span id="tip"></span>
           </div>
-
           <div class="total-row total">
             <span>Total</span>
             <span id="grandTotal"></span>
           </div>
+        </section>
 
-          <div class="Delivery-info">
-            <h3>Delivery Information</h3>
-            <p>
-              Your order will be delivered to the address listed above during
-              your selected delivery time.
-            </p>
-            <p>Questions? Contact: info@thefamilypantry.org</p>
-            <p>Or Call: (816)207-7623</p>
-          </div>
-          <div class="action-buttons">
-            <a id="receiptLink" class="action-btn receipt-link" target="_blank">
-              View Square Receipt
-            </a>
+        <section class="delivery-info">
+          <h3>Delivery Information</h3>
+          <p>
+            Your order will be delivered to the address above during your
+            selected delivery time.
+          </p>
+          <p>Questions? Email info@thefamilypantry.org</p>
+          <p>Call (816) 207-7623</p>
+        </section>
 
-            <button
-              class="action-btn menu-button"
-              onclick="window.location.href = '/menu.html'"
-            >
-              Return to Menu
-            </button>
-
-            <button class="action-btn print-button" onclick="window.print()">
-              Print Order
-            </button>
-          </div>
+        <div class="action-buttons">
+          <a id="trackOrderLink" class="action-btn"> Track Order </a>
+          <a
+            id="receiptLink"
+            class="action-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View Square Receipt
+          </a>
+          <button
+            class="action-btn"
+            type="button"
+            onclick="window.location.href = '/menu.html'"
+          >
+            Return to Menu
+          </button>
+          <button
+            class="action-btn print-button"
+            type="button"
+            onclick="window.print()"
+          >
+            Print Order
+          </button>
         </div>
-        <script>
-          const params = new URLSearchParams(window.location.search);
+      </article>
+    </main>
 
-          document.getElementById('orderNumber').textContent =
-            params.get('orderNumber');
+    <script>
+      const params = new URLSearchParams(window.location.search);
 
-          document.getElementById('customer').textContent =
-            `${params.get('firstName')} ${params.get('lastName')}`;
+      document.getElementById('orderNumber').textContent =
+        params.get('orderNumber') || '';
+      document.getElementById('customer').textContent =
+        `${params.get('firstName') || ''} ${params.get('lastName') || ''}`.trim();
+      document.getElementById('phone').textContent = params.get('phone') || '';
+      document.getElementById('email').textContent = params.get('email') || '';
+      document.getElementById('address').textContent =
+        params.get('address') || '';
+      document.getElementById('method').textContent =
+        params.get('method') || '';
 
-          document.getElementById('phone').textContent = params.get('phone');
+      function getOrdinal(number) {
+        const suffixes = ['th', 'st', 'nd', 'rd'];
+        const remainder = number % 100;
+        return (
+          number +
+          (suffixes[(remainder - 20) % 10] ||
+            suffixes[remainder] ||
+            suffixes[0])
+        );
+      }
 
-          document.getElementById('email').textContent = params.get('email');
+      const deliveryTime = params.get('deliveryTime');
 
-          document.getElementById('address').textContent =
-            params.get('address');
+      if (deliveryTime) {
+        const date = new Date(deliveryTime);
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+        const month = date.toLocaleDateString('en-US', { month: 'long' });
+        const day = getOrdinal(date.getDate());
+        const year = date.getFullYear();
+        const time = date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
 
-          document.getElementById('method').textContent = params.get('method');
+        document.getElementById('deliveryTime').textContent =
+          `${weekday}, ${month} ${day}, ${year} at ${time}`;
+      }
 
-          const menuButton = document.getElementById('menuButton');
+      const subtotal = Number(params.get('subtotal') || 0);
+      const deliveryFee = Number(params.get('deliveryFee') || 0);
+      const salesTax = Number(params.get('salesTax') || 0);
+      const tip = Number(params.get('tip') || 0);
+      const grandTotal = Number(params.get('total') || 0);
 
-          if (menuButton) {
-            menuButton.style.display = 'block';
-          }
+      document.getElementById('subtotal').textContent =
+        '$' + subtotal.toFixed(2);
+      document.getElementById('deliveryFee').textContent =
+        '$' + deliveryFee.toFixed(2);
+      document.getElementById('salesTax').textContent =
+        '$' + salesTax.toFixed(2);
+      document.getElementById('tip').textContent = '$' + tip.toFixed(2);
+      document.getElementById('grandTotal').textContent =
+        '$' + grandTotal.toFixed(2);
 
-          function getOrdinal(n) {
-            const s = ['th', 'st', 'nd', 'rd'];
-            const v = n % 100;
-            return n + (s[(v - 20) % 10] || s[v] || s[0]);
-          }
+      const orderItems = document.getElementById('order-items');
+      const items = (params.get('items') || '')
+        .split(', ')
+        .filter((item) => item.trim());
 
-          const deliveryTime = params.get('deliveryTime');
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.textContent = item;
+        orderItems.appendChild(row);
+      });
 
-          if (deliveryTime) {
-            const date = new Date(deliveryTime);
+      if (items.length === 0) {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.textContent = 'Order details are available in your receipt.';
+        orderItems.appendChild(row);
+      }
 
-            const weekday = date.toLocaleDateString('en-US', {
-              weekday: 'long',
-            });
+      const method = params.get('method') || '';
+      const status = document.getElementById('status');
 
-            const month = date.toLocaleDateString('en-US', {
-              month: 'long',
-            });
+      if (['card', 'apple pay', 'google pay'].includes(method.toLowerCase())) {
+        status.textContent = 'Paid';
+        status.className = 'status-paid';
+      } else if (method.toLowerCase() === 'cash') {
+        status.textContent = 'Pay at Delivery';
+        status.className = 'status-cash';
+      }
 
-            const day = getOrdinal(date.getDate());
+      const receiptUrl = params.get('receiptUrl');
+      const receiptLink = document.getElementById('receiptLink');
+      const trackOrderLink = document.getElementById('trackOrderLink');
 
-            const year = date.getFullYear();
+      trackOrderLink.href =
+        `/track.html?orderNumber=${encodeURIComponent(params.get('orderNumber') || '')}` +
+        `&email=${encodeURIComponent(params.get('email') || '')}`;
 
-            const time = date.toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-            });
-
-            document.getElementById('deliveryTime').textContent =
-              `${weekday}, ${month} ${day}, ${year} at ${time}`;
-          }
-          const subtotal = Number(params.get('subtotal') || 0);
-
-          const deliveryFee = Number(params.get('deliveryFee') || 0);
-
-          const salesTax = Number(params.get('salesTax') || 0);
-
-          const tip = Number(params.get('tip') || 0);
-
-          const grandTotal = Number(params.get('total') || 0);
-
-          const items = params.get('items') || '';
-
-          document.getElementById('subtotal').textContent =
-            '$' + subtotal.toFixed(2);
-
-          document.getElementById('deliveryFee').textContent =
-            '$' + deliveryFee.toFixed(2);
-
-          document.getElementById('salesTax').textContent =
-            '$' + salesTax.toFixed(2);
-
-          document.getElementById('tip').textContent = '$' + tip.toFixed(2);
-
-          document.getElementById('grandTotal').textContent =
-            '$' + grandTotal.toFixed(2);
-
-          document.getElementById('order-items').innerHTML = items
-            .split(', ')
-            .map(
-              (item) => `
-           <div class="item-row">
-             <span>${item}</span>
-           </div>
-         `,
-            )
-            .join('');
-
-          const method = params.get('method') || '';
-
-          const statusEl = document.getElementById('status');
-
-          if (method.toLowerCase() === 'card') {
-            statusEl.textContent = 'PAID';
-            statusEl.className = 'status-paid';
-          }
-
-          if (method.toLowerCase() === 'cash') {
-            statusEl.textContent = 'PAY AT DELIVERY';
-            statusEl.className = 'status-cash';
-          }
-          const receiptUrl = params.get('receiptUrl');
-          const receiptLink = document.getElementById('receiptLink');
-
-          if (receiptUrl) {
-            receiptLink.href = receiptUrl;
-          } else {
-            receiptLink.style.display = 'none';
-          }
-        </script>
-      </div>
-    </body>
+      if (receiptUrl) {
+        receiptLink.href = receiptUrl;
+      } else {
+        receiptLink.style.display = 'none';
+      }
+    </script>
   </body>
 </html>
